@@ -66,6 +66,7 @@ h1{font-size:18px;margin:16px 16px 8px}p{margin:0 16px 12px;color:#555;font-size
       <span id="result-count">95곳</span>
       <span id="selected-title">투표소를 선택하세요</span>
       <button id="print-btn" class="tool-btn" type="button">A4 인쇄</button>
+      <button id="clear-selection-btn" class="tool-btn" type="button">선택 해제</button>
       <button id="show-all-btn" class="tool-btn" type="button">전체 보기</button>
       <button id="close-popup-btn" class="tool-btn" type="button">팝업 닫기</button>
     </div>
@@ -147,6 +148,22 @@ function clearSelection(message = '투표소를 선택하세요') {
   document.getElementById('selected-title').textContent = message;
   document.getElementById('print-sheet-title').innerHTML = '';
   closePopup();
+}
+
+function clearSelectedPlace() {
+  printMode = false;
+  const visibleIndices = [];
+  listItems.forEach((item, idx) => {
+    const visible = matchesQuery(idx);
+    item.style.display = visible ? '' : 'none';
+    markers[idx].setMap(visible ? map : null);
+    circles[idx].setMap(visible ? map : null);
+    if (visible) visibleIndices.push(idx);
+  });
+  updateResultLabels(visibleIndices.length);
+  const message = visibleIndices.length ? `${getFilterLabel(visibleIndices.length)} - 투표소를 선택하세요` : '검색 결과 없음';
+  clearSelection(message);
+  if (visibleIndices.length) fitPlaces(visibleIndices);
 }
 
 function openPlace(i, options = {}) {
@@ -371,6 +388,7 @@ Object.assign(window, {
   closePopup,
   setSelectedOnlyMode,
   showAllPlaces,
+  clearSelectedPlace,
   focusSelectedForPrint,
   printSelected,
   handleDistrictChange,
@@ -387,6 +405,7 @@ window.pollingMapState = () => ({
 });
 
 document.getElementById('print-btn').addEventListener('click', printSelected);
+document.getElementById('clear-selection-btn').addEventListener('click', clearSelectedPlace);
 document.getElementById('show-all-btn').addEventListener('click', showAllPlaces);
 document.getElementById('close-popup-btn').addEventListener('click', closePopup);
 document.getElementById('panel-toggle-btn').addEventListener('click', () => togglePanel());
