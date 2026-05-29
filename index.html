@@ -151,16 +151,7 @@ function clearSelection(message = '투표소를 선택하세요') {
 }
 
 function clearSelectedPlace() {
-  printMode = false;
-  const visibleIndices = [];
-  listItems.forEach((item, idx) => {
-    const visible = matchesQuery(idx);
-    item.style.display = visible ? '' : 'none';
-    markers[idx].setMap(visible ? map : null);
-    circles[idx].setMap(visible ? map : null);
-    if (visible) visibleIndices.push(idx);
-  });
-  updateResultLabels(visibleIndices.length);
+  const visibleIndices = applyCurrentFilters();
   const message = visibleIndices.length ? `${getFilterLabel(visibleIndices.length)} - 투표소를 선택하세요` : '검색 결과 없음';
   clearSelection(message);
   if (visibleIndices.length) fitPlaces(visibleIndices);
@@ -225,6 +216,20 @@ function updateResultLabels(visibleCount) {
   document.getElementById('panel-summary').textContent = text;
 }
 
+function applyCurrentFilters() {
+  printMode = false;
+  const visibleIndices = [];
+  listItems.forEach((item, idx) => {
+    const visible = matchesQuery(idx);
+    item.style.display = visible ? '' : 'none';
+    markers[idx].setMap(visible ? map : null);
+    circles[idx].setMap(visible ? map : null);
+    if (visible) visibleIndices.push(idx);
+  });
+  updateResultLabels(visibleIndices.length);
+  return visibleIndices;
+}
+
 function fitPlaces(indices) {
   if (!indices.length) return;
   if (indices.length === 1) {
@@ -283,18 +288,9 @@ function handleDongChange(value) {
 }
 
 function updateFilteredView(options = {}) {
-  printMode = false;
-  const visibleIndices = [];
-  listItems.forEach((item, idx) => {
-    const visible = matchesQuery(idx);
-    item.style.display = visible ? '' : 'none';
-    markers[idx].setMap(visible ? map : null);
-    circles[idx].setMap(visible ? map : null);
-    if (visible) visibleIndices.push(idx);
-  });
-  updateResultLabels(visibleIndices.length);
+  const visibleIndices = applyCurrentFilters();
   if (visibleIndices.length === 1) {
-    openPlace(visibleIndices[0]);
+    openPlace(visibleIndices[0], { keepFilterContext: true });
   } else if (activeQuery) {
     const message = visibleIndices.length ? `${getFilterLabel(visibleIndices.length)} - 투표소를 선택하세요` : '검색 결과 없음';
     clearSelection(message);
@@ -303,7 +299,7 @@ function updateFilteredView(options = {}) {
     const message = hasFilter && visibleIndices.length ? `${getFilterLabel(visibleIndices.length)} - 투표소를 선택하세요` : '투표소를 선택하세요';
     clearSelection(message);
   }
-  if (options.fit && visibleIndices.length) fitPlaces(visibleIndices);
+  if (options.fit && visibleIndices.length && visibleIndices.length !== 1) fitPlaces(visibleIndices);
 }
 
 function togglePanel(forceOpen) {
@@ -357,7 +353,7 @@ function printSelected() {
 }
 
 window.addEventListener('afterprint', () => {
-  setSelectedOnlyMode(false);
+  applyCurrentFilters();
   if (selectedIndex !== null) {
     const p = places[selectedIndex];
     map.setCenter(new naver.maps.LatLng(p.lat, p.lon));
@@ -365,7 +361,12 @@ window.addEventListener('afterprint', () => {
 });
 
 window.addEventListener('beforeprint', () => {
-  if (selectedIndex === null) selectedIndex = 0;
+  if (selectedIndex === null) {
+    const firstVisibleIndex = places.findIndex((_, idx) => matchesQuery(idx));
+    if (firstVisibleIndex === -1) return;
+    selectedIndex = firstVisibleIndex;
+    setPrintTitle(places[selectedIndex]);
+  }
   closePopup();
   setSelectedOnlyMode(true);
   focusSelectedForPrint();
