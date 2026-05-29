@@ -23,7 +23,9 @@ h1{font-size:18px;margin:16px 16px 8px}p{margin:0 16px 12px;color:#555;font-size
 .icon-btn{height:34px;padding:0 9px;font-size:12px;font-weight:700}.icon-btn:hover,.tool-btn:hover{background:#f2f8f5}
 #toolbar{position:absolute;top:14px;left:14px;right:14px;z-index:5;display:flex;gap:8px;align-items:center;background:#fff;border:1px solid #d9e1dc;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.14);padding:8px}
 #selected-title{font-size:13px;font-weight:700;min-width:160px;max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#search-input{height:34px;min-width:180px;max-width:280px;flex:1;border:1px solid #cfd7d2;border-radius:6px;padding:0 10px;font-size:13px}
+#search-input,.filter-select{height:34px;border:1px solid #cfd7d2;border-radius:6px;background:#fff;padding:0 10px;font-size:13px}
+#search-input{min-width:180px;max-width:280px;flex:1}
+.filter-select{min-width:112px;font-weight:700;color:#111}
 #result-count{font-size:12px;color:#047a44;font-weight:700;white-space:nowrap}
 .tool-btn{height:34px;padding:0 10px;font-weight:700}
 #popup-close{display:none;position:absolute;top:62px;left:14px;z-index:5}
@@ -32,7 +34,7 @@ h1{font-size:18px;margin:16px 16px 8px}p{margin:0 16px 12px;color:#555;font-size
 .popup b{font-size:15px}.popup .meta{color:#555;margin:4px 0 8px}.popup a{color:#047a44}
 .popup-close{position:absolute;right:8px;top:8px;width:24px;height:24px;border:1px solid #cfd7d2;border-radius:50%;background:#fff;cursor:pointer;font-weight:700}
 .popup-print{margin-top:8px;border:1px solid #03a85a;background:#03c75a;color:#fff;border-radius:6px;padding:6px 9px;cursor:pointer;font-weight:700}
-@media(max-width:800px){#layout{grid-template-columns:1fr;grid-template-rows:38% 62%}body.panel-collapsed #layout{grid-template-columns:1fr;grid-template-rows:0 1fr}#panel{border-right:0;border-bottom:1px solid #ddd}#toolbar{left:8px;right:8px;flex-wrap:wrap}#selected-title{max-width:180px}#search-input{min-width:150px;max-width:none;order:4;flex-basis:100%}}
+@media(max-width:800px){#layout{grid-template-columns:1fr;grid-template-rows:38% 62%}body.panel-collapsed #layout{grid-template-columns:1fr;grid-template-rows:0 1fr}#panel{border-right:0;border-bottom:1px solid #ddd}#toolbar{left:8px;right:8px;flex-wrap:wrap}#selected-title{max-width:180px}#search-input{min-width:150px;max-width:none;order:4;flex-basis:100%}.filter-select{flex:1;min-width:120px}}
 @page{size:A4 landscape;margin:10mm}
 @media print{
   html,body{height:auto;margin:0;background:#fff}
@@ -58,6 +60,8 @@ h1{font-size:18px;margin:16px 16px 8px}p{margin:0 16px 12px;color:#555;font-size
     <div id="print-sheet-title"></div>
     <div id="toolbar">
       <button id="panel-toggle-btn" class="tool-btn" type="button">목록 열기</button>
+      <select id="district-select" class="filter-select" title="선거구 선택"></select>
+      <select id="dong-select" class="filter-select" title="동 선택"></select>
       <input id="search-input" type="search" placeholder="동/투표소/주소 검색">
       <span id="result-count">95곳</span>
       <span id="selected-title">투표소를 선택하세요</span>
@@ -76,9 +80,22 @@ const info = new naver.maps.InfoWindow({ maxWidth: 360 });
 const markers=[];
 const circles=[];
 const listItems=[];
+const districts = [
+  { id: 'ga', label: '가선거구', fullName: '광산갑 제1선거구', area: '광산구 갑', dongs: ['송정1동','송정2동','도산동','어룡동','동곡동','평동','삼도동','본량동'] },
+  { id: 'na', label: '나선거구', fullName: '광산갑 제2선거구', area: '광산구 갑', dongs: ['신흥동','우산동','월곡1동','월곡2동','운남동'] },
+  { id: 'da', label: '다선거구', fullName: '광산을 제3선거구', area: '광산구 을', dongs: ['비아동','첨단1동','첨단2동'] },
+  { id: 'ra', label: '라선거구', fullName: '광산을 제3선거구(분)', area: '광산구 을', dongs: ['수완동','하남동','임곡동'] },
+  { id: 'ma', label: '마선거구', fullName: '광산을 제4선거구', area: '광산구 을', dongs: ['신가동','신창동'] }
+];
+const districtAreas = [
+  { id: 'gap', label: '광산구 갑 전체', area: '광산구 갑' },
+  { id: 'eul', label: '광산구 을 전체', area: '광산구 을' }
+];
 let selectedIndex = null;
 let printMode = false;
 let activeQuery = '';
+let selectedDistrict = '';
+let selectedDong = '';
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
@@ -92,6 +109,44 @@ function setActiveItem(i) {
 function setPrintTitle(p) {
   document.getElementById('selected-title').textContent = p.name + ' - ' + p.address;
   document.getElementById('print-sheet-title').innerHTML = `<h2>${escapeHtml(p.name)} 반경 100m 지도</h2><div>${escapeHtml(p.building)}</div><div>${escapeHtml(p.address)}</div>`;
+}
+
+function getPlaceDong(p) {
+  const match = p.name.match(/^(.*?)(?:제\d+투|투표소)$/);
+  return match ? match[1] : '';
+}
+
+function getSelectedDistrict() {
+  return districts.find(district => district.id === selectedDistrict);
+}
+
+function getSelectedArea() {
+  return districtAreas.find(area => area.id === selectedDistrict);
+}
+
+function getSelectedDongs() {
+  const district = getSelectedDistrict();
+  if (district) return district.dongs;
+  const area = getSelectedArea();
+  if (area) return districts.filter(district => district.area === area.area).flatMap(district => district.dongs);
+  return districts.flatMap(district => district.dongs);
+}
+
+function getFilterLabel(visibleCount) {
+  const district = getSelectedDistrict();
+  const area = getSelectedArea();
+  if (selectedDong) return `${selectedDong} ${visibleCount}곳`;
+  if (district) return `${district.label} 전체 ${visibleCount}곳`;
+  if (area) return `${area.label} ${visibleCount}곳`;
+  return activeQuery ? `${visibleCount}곳 검색됨` : `전체 ${visibleCount}곳`;
+}
+
+function clearSelection(message = '투표소를 선택하세요') {
+  selectedIndex = null;
+  setActiveItem(null);
+  document.getElementById('selected-title').textContent = message;
+  document.getElementById('print-sheet-title').innerHTML = '';
+  closePopup();
 }
 
 function openPlace(i, options = {}) {
@@ -122,7 +177,10 @@ function setSelectedOnlyMode(enabled) {
 function showAllPlaces() {
   printMode = false;
   activeQuery = '';
+  selectedDistrict = '';
+  selectedDong = '';
   document.getElementById('search-input').value = '';
+  renderFilterControls();
   updateFilteredView();
   closePopup();
 }
@@ -132,7 +190,11 @@ function placeSearchText(p) {
 }
 
 function matchesQuery(i) {
-  return !activeQuery || placeSearchText(places[i]).includes(activeQuery);
+  const p = places[i];
+  const placeDong = getPlaceDong(p);
+  if (selectedDong && placeDong !== selectedDong) return false;
+  if (!selectedDong && selectedDistrict && !getSelectedDongs().includes(placeDong)) return false;
+  return !activeQuery || placeSearchText(p).includes(activeQuery);
 }
 
 function shouldShowPlace(i, selectedOnly = printMode) {
@@ -141,12 +203,69 @@ function shouldShowPlace(i, selectedOnly = printMode) {
 }
 
 function updateResultLabels(visibleCount) {
-  const text = activeQuery ? `${visibleCount}곳 검색됨` : `전체 ${visibleCount}곳`;
+  const text = getFilterLabel(visibleCount);
   document.getElementById('result-count').textContent = activeQuery ? `${visibleCount}곳` : `${visibleCount}곳`;
   document.getElementById('panel-summary').textContent = text;
 }
 
-function updateFilteredView() {
+function fitPlaces(indices) {
+  if (!indices.length) return;
+  if (indices.length === 1) {
+    const p = places[indices[0]];
+    map.setCenter(new naver.maps.LatLng(p.lat, p.lon));
+    map.setZoom(16);
+    return;
+  }
+  if (naver.maps.LatLngBounds && typeof map.fitBounds === 'function') {
+    const bounds = new naver.maps.LatLngBounds(
+      new naver.maps.LatLng(places[indices[0]].lat, places[indices[0]].lon),
+      new naver.maps.LatLng(places[indices[0]].lat, places[indices[0]].lon)
+    );
+    indices.slice(1).forEach(idx => bounds.extend(new naver.maps.LatLng(places[idx].lat, places[idx].lon)));
+    map.fitBounds(bounds, { top: 90, right: 40, bottom: 40, left: 40 });
+    return;
+  }
+  const center = indices.reduce((acc, idx) => {
+    acc.lat += places[idx].lat;
+    acc.lon += places[idx].lon;
+    return acc;
+  }, { lat: 0, lon: 0 });
+  map.setCenter(new naver.maps.LatLng(center.lat / indices.length, center.lon / indices.length));
+  map.setZoom(selectedDong ? 15 : 12);
+}
+
+function renderFilterControls() {
+  const districtSelect = document.getElementById('district-select');
+  const dongSelect = document.getElementById('dong-select');
+  districtSelect.innerHTML = [
+    '<option value="">전체 선거구</option>',
+    '<optgroup label="광산구 갑/을">',
+    ...districtAreas.map(area => `<option value="${area.id}">${area.label}</option>`),
+    '</optgroup>',
+    '<optgroup label="세부 선거구">',
+    ...districts.map(district => `<option value="${district.id}">${district.label} · ${district.area}</option>`),
+    '</optgroup>'
+  ].join('');
+  districtSelect.value = selectedDistrict;
+
+  const dongOptions = getSelectedDongs();
+  dongSelect.innerHTML = '<option value="">동 전체</option>' + dongOptions.map(dong => `<option value="${dong}">${dong}</option>`).join('');
+  dongSelect.value = selectedDong;
+}
+
+function handleDistrictChange(value) {
+  selectedDistrict = value;
+  selectedDong = '';
+  renderFilterControls();
+  updateFilteredView({ fit: true });
+}
+
+function handleDongChange(value) {
+  selectedDong = value;
+  updateFilteredView({ fit: true });
+}
+
+function updateFilteredView(options = {}) {
   printMode = false;
   const visibleIndices = [];
   listItems.forEach((item, idx) => {
@@ -157,7 +276,17 @@ function updateFilteredView() {
     if (visible) visibleIndices.push(idx);
   });
   updateResultLabels(visibleIndices.length);
-  if (visibleIndices.length === 1) openPlace(visibleIndices[0]);
+  if (visibleIndices.length === 1) {
+    openPlace(visibleIndices[0]);
+  } else if (activeQuery) {
+    const message = visibleIndices.length ? `${getFilterLabel(visibleIndices.length)} - 투표소를 선택하세요` : '검색 결과 없음';
+    clearSelection(message);
+  } else {
+    const hasFilter = selectedDistrict || selectedDong;
+    const message = hasFilter && visibleIndices.length ? `${getFilterLabel(visibleIndices.length)} - 투표소를 선택하세요` : '투표소를 선택하세요';
+    clearSelection(message);
+  }
+  if (options.fit && visibleIndices.length) fitPlaces(visibleIndices);
 }
 
 function togglePanel(forceOpen) {
@@ -192,7 +321,12 @@ function focusSelectedForPrint() {
 
 function printSelected() {
   if (selectedIndex === null) {
-    openPlace(0, { print: true });
+    const firstVisibleIndex = places.findIndex((_, idx) => matchesQuery(idx));
+    if (firstVisibleIndex === -1) {
+      window.alert('인쇄할 검색 결과가 없습니다.');
+      return;
+    }
+    openPlace(firstVisibleIndex, { print: true });
   } else {
     openPlace(selectedIndex, { print: true });
   }
@@ -238,23 +372,29 @@ Object.assign(window, {
   setSelectedOnlyMode,
   showAllPlaces,
   focusSelectedForPrint,
-  printSelected
+  printSelected,
+  handleDistrictChange,
+  handleDongChange
 });
 
 window.pollingMapState = () => ({
   selectedIndex,
   visibleMarkers: markers.filter(marker => !!marker.getMap()).length,
   visibleCircles: circles.filter(circle => !!circle.getMap()).length,
-  printMode
+  printMode,
+  selectedDistrict,
+  selectedDong
 });
 
 document.getElementById('print-btn').addEventListener('click', printSelected);
 document.getElementById('show-all-btn').addEventListener('click', showAllPlaces);
 document.getElementById('close-popup-btn').addEventListener('click', closePopup);
 document.getElementById('panel-toggle-btn').addEventListener('click', () => togglePanel());
+document.getElementById('district-select').addEventListener('change', event => handleDistrictChange(event.target.value));
+document.getElementById('dong-select').addEventListener('change', event => handleDongChange(event.target.value));
 document.getElementById('search-input').addEventListener('input', event => {
   activeQuery = event.target.value.trim().toLowerCase();
-  updateFilteredView();
+  updateFilteredView({ fit: true });
 });
 
 places.forEach((p,i)=>{
@@ -273,7 +413,8 @@ places.forEach((p,i)=>{
 });
 
 setActiveItem(0);
-setPrintTitle(places[0]);
+renderFilterControls();
+clearSelection();
 updateResultLabels(places.length);
 </script>
 </body>
