@@ -7,19 +7,24 @@
 <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=9n3jbih6d9"></script>
 <style>
 html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#111}
-#layout{display:grid;grid-template-columns:360px 1fr;height:100%}
-#panel{overflow:auto;border-right:1px solid #ddd;background:#fff}
+#layout{display:grid;grid-template-columns:320px 1fr;height:100%;transition:grid-template-columns .18s ease}
+body.panel-collapsed #layout{grid-template-columns:0 1fr}
+#panel{overflow:auto;border-right:1px solid #ddd;background:#fff;min-width:0;transition:opacity .16s ease}
+body.panel-collapsed #panel{opacity:0;pointer-events:none;border-right:0}
 #map-wrap{position:relative;height:100%;background:#f5f5f5}
 #map{height:100%}
 h1{font-size:18px;margin:16px 16px 8px}p{margin:0 16px 12px;color:#555;font-size:13px;line-height:1.45}
+#panel-summary{margin:0 16px 12px;font-size:12px;color:#047a44;font-weight:700}
 .item{padding:10px 14px;border-top:1px solid #eee;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
 .item:hover{background:#f4faf7}.item.active{background:#e9f8f0;border-left:4px solid #03c75a;padding-left:10px}
 .name{font-weight:700}.addr{font-size:12px;color:#555;margin-top:4px;line-height:1.35}
 .badge{display:inline-block;background:#03c75a;color:white;border-radius:999px;padding:2px 7px;font-size:11px;margin-left:6px}
 .icon-btn,.tool-btn{border:1px solid #cfd7d2;background:#fff;border-radius:6px;cursor:pointer;color:#111}
 .icon-btn{height:34px;padding:0 9px;font-size:12px;font-weight:700}.icon-btn:hover,.tool-btn:hover{background:#f2f8f5}
-#toolbar{position:absolute;top:14px;left:14px;z-index:5;display:flex;gap:8px;align-items:center;background:#fff;border:1px solid #d9e1dc;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.14);padding:8px}
-#selected-title{font-size:13px;font-weight:700;max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#toolbar{position:absolute;top:14px;left:14px;right:14px;z-index:5;display:flex;gap:8px;align-items:center;background:#fff;border:1px solid #d9e1dc;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.14);padding:8px}
+#selected-title{font-size:13px;font-weight:700;min-width:160px;max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#search-input{height:34px;min-width:180px;max-width:280px;flex:1;border:1px solid #cfd7d2;border-radius:6px;padding:0 10px;font-size:13px}
+#result-count{font-size:12px;color:#047a44;font-weight:700;white-space:nowrap}
 .tool-btn{height:34px;padding:0 10px;font-weight:700}
 #popup-close{display:none;position:absolute;top:62px;left:14px;z-index:5}
 #print-sheet-title{display:none}
@@ -27,7 +32,7 @@ h1{font-size:18px;margin:16px 16px 8px}p{margin:0 16px 12px;color:#555;font-size
 .popup b{font-size:15px}.popup .meta{color:#555;margin:4px 0 8px}.popup a{color:#047a44}
 .popup-close{position:absolute;right:8px;top:8px;width:24px;height:24px;border:1px solid #cfd7d2;border-radius:50%;background:#fff;cursor:pointer;font-weight:700}
 .popup-print{margin-top:8px;border:1px solid #03a85a;background:#03c75a;color:#fff;border-radius:6px;padding:6px 9px;cursor:pointer;font-weight:700}
-@media(max-width:800px){#layout{grid-template-columns:1fr;grid-template-rows:42% 58%}#panel{border-right:0;border-bottom:1px solid #ddd}#toolbar{left:8px;right:8px}#selected-title{max-width:180px}}
+@media(max-width:800px){#layout{grid-template-columns:1fr;grid-template-rows:38% 62%}body.panel-collapsed #layout{grid-template-columns:1fr;grid-template-rows:0 1fr}#panel{border-right:0;border-bottom:1px solid #ddd}#toolbar{left:8px;right:8px;flex-wrap:wrap}#selected-title{max-width:180px}#search-input{min-width:150px;max-width:none;order:4;flex-basis:100%}}
 @page{size:A4 landscape;margin:10mm}
 @media print{
   html,body{height:auto;margin:0;background:#fff}
@@ -41,16 +46,20 @@ h1{font-size:18px;margin:16px 16px 8px}p{margin:0 16px 12px;color:#555;font-size
 }
 </style>
 </head>
-<body>
+<body class="panel-collapsed">
 <div id="layout">
   <aside id="panel">
     <h1>광산구 선거일투표소 <span class="badge">95곳</span></h1>
     <p>각 마커 주변의 초록 원은 중심지 기준 반경 100m입니다. 항목을 누르면 해당 투표소가 선택되고, A4 인쇄 버튼으로 출력할 수 있습니다.</p>
+    <div id="panel-summary">전체 95곳 표시 중</div>
     <div id="list"></div>
   </aside>
   <main id="map-wrap">
     <div id="print-sheet-title"></div>
     <div id="toolbar">
+      <button id="panel-toggle-btn" class="tool-btn" type="button">목록 열기</button>
+      <input id="search-input" type="search" placeholder="동/투표소/주소 검색">
+      <span id="result-count">95곳</span>
       <span id="selected-title">투표소를 선택하세요</span>
       <button id="print-btn" class="tool-btn" type="button">A4 인쇄</button>
       <button id="show-all-btn" class="tool-btn" type="button">전체 보기</button>
@@ -66,8 +75,10 @@ const map = new naver.maps.Map('map', { center: new naver.maps.LatLng(35.1779340
 const info = new naver.maps.InfoWindow({ maxWidth: 360 });
 const markers=[];
 const circles=[];
+const listItems=[];
 let selectedIndex = null;
 let printMode = false;
+let activeQuery = '';
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
@@ -75,6 +86,7 @@ function escapeHtml(value) {
 
 function setActiveItem(i) {
   document.querySelectorAll('.item').forEach((el, idx) => el.classList.toggle('active', idx === i));
+  document.querySelectorAll('.item').forEach(el => el.classList.toggle('active', Number(el.dataset.index) === i));
 }
 
 function setPrintTitle(p) {
@@ -103,15 +115,63 @@ function closePopup() {
 
 function setSelectedOnlyMode(enabled) {
   printMode = enabled;
-  markers.forEach((marker, idx) => marker.setMap(!enabled || idx === selectedIndex ? map : null));
-  circles.forEach((circle, idx) => circle.setMap(!enabled || idx === selectedIndex ? map : null));
+  markers.forEach((marker, idx) => marker.setMap(shouldShowPlace(idx, enabled) ? map : null));
+  circles.forEach((circle, idx) => circle.setMap(shouldShowPlace(idx, enabled) ? map : null));
 }
 
 function showAllPlaces() {
   printMode = false;
-  markers.forEach(marker => marker.setMap(map));
-  circles.forEach(circle => circle.setMap(map));
+  activeQuery = '';
+  document.getElementById('search-input').value = '';
+  updateFilteredView();
   closePopup();
+}
+
+function placeSearchText(p) {
+  return `${p.name} ${p.building} ${p.address}`.toLowerCase();
+}
+
+function matchesQuery(i) {
+  return !activeQuery || placeSearchText(places[i]).includes(activeQuery);
+}
+
+function shouldShowPlace(i, selectedOnly = printMode) {
+  if (selectedOnly) return i === selectedIndex;
+  return matchesQuery(i);
+}
+
+function updateResultLabels(visibleCount) {
+  const text = activeQuery ? `${visibleCount}곳 검색됨` : `전체 ${visibleCount}곳`;
+  document.getElementById('result-count').textContent = activeQuery ? `${visibleCount}곳` : `${visibleCount}곳`;
+  document.getElementById('panel-summary').textContent = text;
+}
+
+function updateFilteredView() {
+  printMode = false;
+  const visibleIndices = [];
+  listItems.forEach((item, idx) => {
+    const visible = matchesQuery(idx);
+    item.style.display = visible ? '' : 'none';
+    markers[idx].setMap(visible ? map : null);
+    circles[idx].setMap(visible ? map : null);
+    if (visible) visibleIndices.push(idx);
+  });
+  updateResultLabels(visibleIndices.length);
+  if (visibleIndices.length === 1) openPlace(visibleIndices[0]);
+}
+
+function togglePanel(forceOpen) {
+  const body = document.body;
+  const shouldOpen = forceOpen ?? body.classList.contains('panel-collapsed');
+  body.classList.toggle('panel-collapsed', !shouldOpen);
+  document.getElementById('panel-toggle-btn').textContent = shouldOpen ? '목록 닫기' : '목록 열기';
+  setTimeout(() => {
+    naver.maps.Event.trigger(map, 'resize');
+    if (selectedIndex !== null) {
+      const p = places[selectedIndex];
+      map.setCenter(new naver.maps.LatLng(p.lat, p.lon));
+    }
+  }, 220);
 }
 
 function focusSelectedForPrint() {
@@ -191,6 +251,11 @@ window.pollingMapState = () => ({
 document.getElementById('print-btn').addEventListener('click', printSelected);
 document.getElementById('show-all-btn').addEventListener('click', showAllPlaces);
 document.getElementById('close-popup-btn').addEventListener('click', closePopup);
+document.getElementById('panel-toggle-btn').addEventListener('click', () => togglePanel());
+document.getElementById('search-input').addEventListener('input', event => {
+  activeQuery = event.target.value.trim().toLowerCase();
+  updateFilteredView();
+});
 
 places.forEach((p,i)=>{
   const pos=new naver.maps.LatLng(p.lat,p.lon);
@@ -199,14 +264,17 @@ places.forEach((p,i)=>{
   markers.push(marker); circles.push(circle);
   naver.maps.Event.addListener(marker,'click',()=>openPlace(i));
   const div=document.createElement('div'); div.className='item';
+  div.dataset.index = i;
   div.innerHTML=`<div><div class="name">${i+1}. ${escapeHtml(p.name)}</div><div class="addr">${escapeHtml(p.building)}<br>${escapeHtml(p.address)}</div></div><button class="icon-btn" type="button" title="이 투표소 A4 인쇄">인쇄</button>`;
-  div.onclick=(event)=>{ openPlace(i); };
+  div.onclick=(event)=>{ togglePanel(false); openPlace(i); };
   div.querySelector('button').onclick=(event)=>{ event.stopPropagation(); openPlace(i, { print: true }); printSelected(); };
+  listItems.push(div);
   document.getElementById('list').appendChild(div);
 });
 
 setActiveItem(0);
 setPrintTitle(places[0]);
+updateResultLabels(places.length);
 </script>
 </body>
 </html>
