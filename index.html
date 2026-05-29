@@ -3,6 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="광산구 선거일투표소를 선거구·동별로 찾고 반경 100m 지도를 A4로 인쇄할 수 있습니다.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="광산구 선거일투표소 지도">
+<meta property="og:description" content="선거구·동별 검색, 반경 100m 확인, A4 인쇄">
+<meta property="og:url" content="https://rmsummit.github.io/gwangsan-polling-map/">
+<meta property="og:image" content="https://rmsummit.github.io/gwangsan-polling-map/share-infographic.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="광산구 선거일투표소 지도">
+<meta name="twitter:description" content="선거구·동별 검색, 반경 100m 확인, A4 인쇄">
+<meta name="twitter:image" content="https://rmsummit.github.io/gwangsan-polling-map/share-infographic.png">
 <title>광산구 선거일투표소 지도 - 반경 100m</title>
 <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=9n3jbih6d9"></script>
 <style>
@@ -65,6 +77,7 @@ h1{font-size:18px;margin:16px 16px 8px}p{margin:0 16px 12px;color:#555;font-size
       <input id="search-input" type="search" placeholder="동/투표소/주소 검색">
       <span id="result-count">95곳</span>
       <span id="selected-title">투표소를 선택하세요</span>
+      <button id="share-btn" class="tool-btn" type="button">카카오톡 공유</button>
       <button id="print-btn" class="tool-btn" type="button">A4 인쇄</button>
       <button id="clear-selection-btn" class="tool-btn" type="button">선택 해제</button>
       <button id="show-all-btn" class="tool-btn" type="button">전체 보기</button>
@@ -81,6 +94,9 @@ const info = new naver.maps.InfoWindow({ maxWidth: 360 });
 const markers=[];
 const circles=[];
 const listItems=[];
+const SHARE_URL = 'https://rmsummit.github.io/gwangsan-polling-map/';
+const SHARE_TITLE = '광산구 선거일투표소 지도';
+const SHARE_TEXT = '선거구·동별로 투표소를 찾고 반경 100m 지도를 A4로 인쇄할 수 있습니다.';
 const districts = [
   { id: 'ga', label: '가선거구', fullName: '광산갑 제1선거구', area: '광산구 갑', dongs: ['송정1동','송정2동','도산동','어룡동','동곡동','평동','삼도동','본량동'] },
   { id: 'na', label: '나선거구', fullName: '광산갑 제2선거구', area: '광산구 갑', dongs: ['신흥동','우산동','월곡1동','월곡2동','운남동'] },
@@ -352,6 +368,23 @@ function printSelected() {
   }, 550);
 }
 
+async function shareMap() {
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: SHARE_TITLE, text: SHARE_TEXT, url: SHARE_URL });
+      return;
+    } catch (error) {
+      if (error && error.name === 'AbortError') return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(SHARE_URL);
+    window.alert('공유 링크를 복사했습니다. 카카오톡 대화창에 붙여넣어 주세요.');
+  } catch (error) {
+    window.prompt('아래 링크를 복사해 카카오톡에 붙여넣어 주세요.', SHARE_URL);
+  }
+}
+
 window.addEventListener('afterprint', () => {
   applyCurrentFilters();
   if (selectedIndex !== null) {
@@ -392,6 +425,7 @@ Object.assign(window, {
   clearSelectedPlace,
   focusSelectedForPrint,
   printSelected,
+  shareMap,
   handleDistrictChange,
   handleDongChange
 });
@@ -406,6 +440,7 @@ window.pollingMapState = () => ({
 });
 
 document.getElementById('print-btn').addEventListener('click', printSelected);
+document.getElementById('share-btn').addEventListener('click', shareMap);
 document.getElementById('clear-selection-btn').addEventListener('click', clearSelectedPlace);
 document.getElementById('show-all-btn').addEventListener('click', showAllPlaces);
 document.getElementById('close-popup-btn').addEventListener('click', closePopup);
