@@ -35,6 +35,9 @@ h1{font-size:18px;margin:16px 16px 8px}p{margin:0 16px 12px;color:#555;font-size
 .icon-btn{height:34px;padding:0 9px;font-size:12px;font-weight:700}.icon-btn:hover,.tool-btn:hover{background:#f2f8f5}
 .tool-btn:disabled{cursor:wait;opacity:.65}
 #toolbar{position:absolute;top:14px;left:14px;right:14px;z-index:5;display:flex;gap:8px;align-items:center;background:#fff;border:1px solid #d9e1dc;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.14);padding:8px}
+#location-status{display:none;position:absolute;left:14px;right:14px;bottom:20px;z-index:6;border-radius:8px;padding:10px 12px;font-size:13px;font-weight:800;line-height:1.35;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+#location-status.warning{display:block;border:1px solid #ef4444;background:#fff1f2;color:#b91c1c}
+#location-status.safe{display:block;border:1px solid #22c55e;background:#f0fdf4;color:#166534}
 #selected-title{font-size:13px;font-weight:700;min-width:140px;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #search-input,.filter-select{height:34px;border:1px solid #cfd7d2;border-radius:6px;background:#fff;padding:0 10px;font-size:13px}
 #search-input{min-width:180px;max-width:280px;flex:1}
@@ -45,7 +48,7 @@ h1{font-size:18px;margin:16px 16px 8px}p{margin:0 16px 12px;color:#555;font-size
 #print-sheet-title{display:none}
 body.printing-map{background:#fff}
 body.printing-map #layout{display:block;height:auto}
-body.printing-map #panel,body.printing-map #toolbar,body.printing-map #popup-close{display:none!important}
+body.printing-map #panel,body.printing-map #toolbar,body.printing-map #popup-close,body.printing-map #location-status{display:none!important}
 body.printing-map #map-wrap{width:min(calc(100vw - 28px),1100px);aspect-ratio:277/190;height:auto;margin:0 auto;background:#fff}
 body.printing-map #map{width:100%;height:100%;border:1px solid #222;box-sizing:border-box}
 body.printing-map #print-sheet-title{display:block;position:absolute;left:16px;right:16px;bottom:16px;z-index:10;background:rgba(255,255,255,.92);border:1px solid #555;padding:10px 12px;font-size:12px;line-height:1.3}
@@ -60,6 +63,7 @@ body.printing-map #print-sheet-title div{font-size:12px;color:#333}
   body.panel-collapsed #layout{grid-template-columns:1fr;grid-template-rows:0 1fr}
   #panel{border-right:0;border-bottom:1px solid #ddd}
   #toolbar{left:8px;right:auto;top:8px;width:calc(100vw - 16px);box-sizing:border-box;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-items:center;padding:8px}
+  #location-status{left:8px;right:8px;bottom:24px;font-size:12px}
   #selected-title{grid-column:1/-1;min-width:0;max-width:none;font-size:12px;line-height:1.25}
   #result-count{font-size:12px}
   #search-input{grid-column:1/-1;min-width:0;max-width:none;width:100%;box-sizing:border-box;order:0}
@@ -73,7 +77,7 @@ body.printing-map #print-sheet-title div{font-size:12px;color:#333}
 @media print{
   html,body{height:auto;margin:0;background:#fff}
   #layout{display:block;height:auto}
-  #panel,#toolbar,#popup-close{display:none!important}
+  #panel,#toolbar,#popup-close,#location-status{display:none!important}
   #map-wrap{height:190mm;width:277mm;break-inside:avoid;page-break-inside:avoid;background:#fff}
   #map{height:190mm;width:277mm;border:1px solid #222;box-sizing:border-box}
   #print-sheet-title{display:block;position:absolute;left:4mm;right:4mm;bottom:4mm;z-index:10;background:rgba(255,255,255,.92);border:1px solid #555;padding:2.5mm 3mm;font-size:10pt;line-height:1.3}
@@ -107,6 +111,7 @@ body.printing-map #print-sheet-title div{font-size:12px;color:#333}
       <button id="close-popup-btn" class="tool-btn" type="button">팝업 닫기</button>
     </div>
     <button id="popup-close" class="tool-btn" type="button" onclick="closePopup()">팝업 닫기</button>
+    <div id="location-status" role="status" aria-live="polite"></div>
     <div id="map"></div>
   </main>
 </div>
@@ -266,6 +271,41 @@ function setLocateButtonState(label, disabled = false) {
   button.disabled = disabled;
 }
 
+function distanceMeters(lat1, lon1, lat2, lon2) {
+  const toRad = value => value * Math.PI / 180;
+  const earthRadius = 6371000;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatMeters(distance) {
+  return distance >= 1000 ? `${(distance / 1000).toFixed(1)}km` : `${Math.round(distance)}m`;
+}
+
+function getNearestPlace(lat, lon) {
+  return places.reduce((nearest, place, index) => {
+    const distance = distanceMeters(lat, lon, place.lat, place.lon);
+    if (!nearest || distance < nearest.distance) return { place, index, distance };
+    return nearest;
+  }, null);
+}
+
+function updateLocationSafetyStatus(lat, lon) {
+  const nearest = getNearestPlace(lat, lon);
+  if (!nearest) return;
+  const status = document.getElementById('location-status');
+  const isInside = nearest.distance <= 100;
+  const distanceText = formatMeters(nearest.distance);
+  const text = isInside
+    ? `경고: 가장 가까운 ${nearest.place.name} 반경 100m 안입니다. 현재 거리 약 ${distanceText}`
+    : `안전: 가장 가까운 ${nearest.place.name}까지 약 ${distanceText}로 100m 밖입니다.`;
+  status.className = isInside ? 'warning' : 'safe';
+  status.textContent = text;
+  document.getElementById('selected-title').textContent = text;
+}
+
 function showUserLocationOnMap(position) {
   const { latitude, longitude } = position.coords;
   const pos = new naver.maps.LatLng(latitude, longitude);
@@ -286,6 +326,7 @@ function showUserLocationOnMap(position) {
   }
   map.setCenter(pos);
   map.setZoom(Math.max(map.getZoom(), 16));
+  updateLocationSafetyStatus(latitude, longitude);
   setLocateButtonState('내 위치');
   collapseMobileToolbar();
 }
