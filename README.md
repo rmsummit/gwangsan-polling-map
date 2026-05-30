@@ -134,10 +134,24 @@ Windows: Ctrl + Shift + R
   - `https://rmsummit.github.io/gwangsan-polling-map`
   - `https://rmsummit.github.io/gwangsan-polling-map/`
 
+## 배포 전 점검
+
+수정 후 배포하기 전에 아래 명령으로 주요 회귀를 확인합니다.
+
+```bash
+node regression-check.js
+```
+
+현재 점검 항목:
+
+- `전체 보기`가 선택한 선거구/동 필터를 유지하는지 확인
+- README 사용법이 실제 동작과 일치하는지 확인
+
 ## 포함 파일
 
 - `index.html`: 배포용 지도 페이지
 - `README.md`: 사용법 및 배포 안내
+- `regression-check.js`: 배포 전 회귀 점검 스크립트
 - `polling-stamp.svg`: 투표소 마커 아이콘
 - `share-infographic.svg`: 카카오톡 미리보기용 인포그래픽 원본
 - `share-infographic.png`: 카카오톡 미리보기용 인포그래픽 이미지
