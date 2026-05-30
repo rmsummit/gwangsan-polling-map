@@ -507,7 +507,7 @@ function syncPrintMapSize() {
   if (!width || !height) return;
   mapElement.style.width = `${width}px`;
   mapElement.style.height = `${height}px`;
-  if (typeof map.setSize === 'function') {
+  if (typeof map.setSize === 'function' && naver.maps.Size) {
     map.setSize(new naver.maps.Size(width, height));
   }
   naver.maps.Event.trigger(map, 'resize');
