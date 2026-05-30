@@ -49,7 +49,7 @@ h1{font-size:18px;margin:16px 16px 8px}p{margin:0 16px 12px;color:#555;font-size
 body.printing-map{background:#fff}
 body.printing-map #layout{display:block;height:auto}
 body.printing-map #panel,body.printing-map #toolbar,body.printing-map #popup-close,body.printing-map #location-status{display:none!important}
-body.printing-map #map-wrap{width:min(calc(100vw - 28px),1100px);aspect-ratio:277/190;height:auto;margin:0 auto;background:#fff}
+body.printing-map #map-wrap{width:277mm;height:190mm;max-width:calc(100vw - 28px);max-height:calc((100vw - 28px) * 190 / 277);margin:0 auto;background:#fff}
 body.printing-map #map{width:100%;height:100%;border:1px solid #222;box-sizing:border-box}
 body.printing-map #print-sheet-title{display:block;position:absolute;left:16px;right:16px;bottom:16px;z-index:10;background:rgba(255,255,255,.92);border:1px solid #555;padding:10px 12px;font-size:12px;line-height:1.3}
 body.printing-map #print-sheet-title h2{font-size:16px;margin:0 0 4px 0}
@@ -499,29 +499,54 @@ function focusSelectedForPrint() {
   });
 }
 
+function syncPrintMapSize() {
+  const mapWrap = document.getElementById('map-wrap');
+  const mapElement = document.getElementById('map');
+  const width = Math.round(mapWrap.getBoundingClientRect().width);
+  const height = Math.round(mapWrap.getBoundingClientRect().height);
+  if (!width || !height) return;
+  mapElement.style.width = `${width}px`;
+  mapElement.style.height = `${height}px`;
+  if (typeof map.setSize === 'function') {
+    map.setSize(new naver.maps.Size(width, height));
+  }
+  naver.maps.Event.trigger(map, 'resize');
+}
+
 function prepareSelectedForPrint() {
   closePopup();
   setSelectedOnlyMode(true);
   document.body.classList.add('printing-map');
   collapseMobileToolbar();
+  syncPrintMapSize();
   focusSelectedForPrint();
 }
 
 function cleanupPrintLayout() {
   document.body.classList.remove('printing-map');
+  const mapElement = document.getElementById('map');
+  mapElement.style.width = '';
+  mapElement.style.height = '';
   naver.maps.Event.trigger(map, 'resize');
 }
 
 function waitForPrintCenter() {
   return new Promise(resolve => {
     requestAnimationFrame(() => {
+      syncPrintMapSize();
       focusSelectedForPrint();
       requestAnimationFrame(() => {
+        syncPrintMapSize();
         focusSelectedForPrint();
         setTimeout(() => {
+          syncPrintMapSize();
           focusSelectedForPrint();
-          resolve();
-        }, 650);
+          setTimeout(() => {
+            syncPrintMapSize();
+            focusSelectedForPrint();
+            resolve();
+          }, 450);
+        }, 850);
       });
     });
   });
