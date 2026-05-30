@@ -676,8 +676,10 @@ document.getElementById('search-input').addEventListener('blur', () => {
 
 function getPollingPlaceStampIcon() {
   return {
-    content: '<div style="width:30px;height:30px;border:3px solid #d92d20;border-radius:50%;background:rgba(255,255,255,.95);color:#d92d20;box-shadow:0 2px 8px rgba(0,0,0,.24);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;letter-spacing:0;transform:rotate(-12deg)">투표</div>',
-    anchor: new naver.maps.Point(18, 18)
+    url: 'polling-stamp.svg',
+    size: new naver.maps.Size(34, 34),
+    scaledSize: new naver.maps.Size(34, 34),
+    anchor: new naver.maps.Point(17, 17)
   };
 }
 
