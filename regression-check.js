@@ -22,6 +22,7 @@ function assert(condition, message) {
 }
 
 const showAllPlaces = getFunctionBody('showAllPlaces');
+const getPlaceDisplayName = getFunctionBody('getPlaceDisplayName');
 
 assert(
   !/selectedDistrict\s*=/.test(showAllPlaces),
@@ -38,6 +39,14 @@ assert(
 assert(
   readme.includes('선택한 선거구/동은 유지'),
   'README must document that 전체 보기 keeps district/dong filters.'
+);
+assert(
+  /제\$1투표소/.test(getPlaceDisplayName),
+  'getPlaceDisplayName must expand 제n투 to 제n투표소.'
+);
+assert(
+  html.includes('getPlaceDisplayName(p)'),
+  'Displayed polling place names must use getPlaceDisplayName.'
 );
 
 console.log('regression checks ok');
