@@ -209,10 +209,10 @@ function setMapType(type) {
 
 function getPollingMarkerSize() {
   const zoom = typeof map.getZoom === 'function' ? map.getZoom() : 12;
-  if (zoom <= 11) return 26;
-  if (zoom <= 13) return 34;
-  if (zoom <= 15) return 40;
-  return 46;
+  if (zoom <= 11) return 20;
+  if (zoom <= 13) return 26;
+  if (zoom <= 15) return 32;
+  return 36;
 }
 
 function refreshPollingMarkerIcons() {
