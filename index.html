@@ -107,7 +107,6 @@ const markers=[];
 const circles=[];
 const listItems=[];
 let userMarker = null;
-let userAccuracyCircle = null;
 const SHARE_URL = 'https://rmsummit.github.io/gwangsan-polling-map/';
 const SHARE_TITLE = '광산구 선거일투표소 지도';
 const SHARE_TEXT = '선거구·동별로 투표소를 찾고 반경 100m 지도를 A4로 인쇄할 수 있습니다.';
@@ -230,7 +229,7 @@ function setLocateButtonState(label, disabled = false) {
 }
 
 function showUserLocationOnMap(position) {
-  const { latitude, longitude, accuracy } = position.coords;
+  const { latitude, longitude } = position.coords;
   const pos = new naver.maps.LatLng(latitude, longitude);
   if (!userMarker) {
     userMarker = new naver.maps.Marker({
@@ -246,22 +245,6 @@ function showUserLocationOnMap(position) {
   } else {
     userMarker.setPosition(pos);
     userMarker.setMap(map);
-  }
-  if (!userAccuracyCircle) {
-    userAccuracyCircle = new naver.maps.Circle({
-      map,
-      center: pos,
-      radius: accuracy || 30,
-      strokeColor: '#ef233c',
-      strokeOpacity: 0.7,
-      strokeWeight: 2,
-      fillColor: '#ef233c',
-      fillOpacity: 0.12
-    });
-  } else {
-    userAccuracyCircle.setCenter(pos);
-    userAccuracyCircle.setRadius(accuracy || 30);
-    userAccuracyCircle.setMap(map);
   }
   map.setCenter(pos);
   map.setZoom(Math.max(map.getZoom(), 16));
