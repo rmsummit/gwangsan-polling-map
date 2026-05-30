@@ -45,10 +45,13 @@ h1{font-size:18px;margin:16px 16px 8px}p{margin:0 16px 12px;color:#555;font-size
 #result-count{font-size:12px;color:#047a44;font-weight:700;white-space:nowrap}
 .tool-btn{height:34px;padding:0 10px;font-weight:700;white-space:nowrap;flex:0 0 auto}
 #popup-close{display:none;position:absolute;top:62px;left:14px;z-index:5}
+#map-locate-btn{position:absolute;right:14px;bottom:86px;z-index:6;height:42px;padding:0 14px;border:1px solid #d92d20;background:#fff;color:#b42318;border-radius:999px;box-shadow:0 2px 10px rgba(0,0,0,.2);font-size:13px;font-weight:800;cursor:pointer}
+#map-locate-btn:hover{background:#fff5f5}
+#map-locate-btn:disabled{cursor:wait;opacity:.65}
 #print-sheet-title{display:none}
 body.printing-map{background:#fff}
 body.printing-map #layout{display:block;height:auto}
-body.printing-map #panel,body.printing-map #toolbar,body.printing-map #popup-close,body.printing-map #location-status{display:none!important}
+body.printing-map #panel,body.printing-map #toolbar,body.printing-map #popup-close,body.printing-map #location-status,body.printing-map #map-locate-btn{display:none!important}
 body.printing-map #map-wrap{width:297mm;height:210mm;max-width:calc(100vw - 28px);max-height:calc((100vw - 28px) * 210 / 297);margin:0 auto;background:#fff}
 body.printing-map #map{width:100%;height:100%;border:1px solid #222;box-sizing:border-box}
 body.printing-map #print-sheet-title{display:block;position:absolute;left:16px;right:16px;bottom:16px;z-index:10;background:rgba(255,255,255,.92);border:1px solid #555;padding:10px 12px;font-size:12px;line-height:1.3}
@@ -64,6 +67,7 @@ body.printing-map #print-sheet-title div{font-size:12px;color:#333}
   #panel{border-right:0;border-bottom:1px solid #ddd}
   #toolbar{left:8px;right:auto;top:8px;width:calc(100vw - 16px);box-sizing:border-box;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-items:center;padding:8px}
   #location-status{left:8px;right:8px;bottom:24px;font-size:12px}
+  #map-locate-btn{right:10px;bottom:86px;height:38px;padding:0 12px;font-size:12px}
   #selected-title{grid-column:1/-1;min-width:0;max-width:none;font-size:12px;line-height:1.25}
   #result-count{font-size:12px}
   #search-input{grid-column:1/-1;min-width:0;max-width:none;width:100%;box-sizing:border-box;order:0}
@@ -77,7 +81,7 @@ body.printing-map #print-sheet-title div{font-size:12px;color:#333}
 @media print{
   html,body{height:auto;margin:0;background:#fff}
   #layout{display:block;height:auto}
-  #panel,#toolbar,#popup-close,#location-status{display:none!important}
+  #panel,#toolbar,#popup-close,#location-status,#map-locate-btn{display:none!important}
   #map-wrap{height:210mm;width:297mm;break-inside:avoid;page-break-inside:avoid;background:#fff}
   #map{height:210mm;width:297mm;border:0;box-sizing:border-box}
   #print-sheet-title{display:block;position:absolute;left:4mm;right:4mm;bottom:4mm;z-index:10;background:rgba(255,255,255,.92);border:1px solid #555;padding:2.5mm 3mm;font-size:10pt;line-height:1.3}
@@ -112,6 +116,7 @@ body.printing-map #print-sheet-title div{font-size:12px;color:#333}
     </div>
     <button id="popup-close" class="tool-btn" type="button" onclick="closePopup()">팝업 닫기</button>
     <div id="location-status" role="status" aria-live="polite"></div>
+    <button id="map-locate-btn" type="button">내 위치</button>
     <div id="map"></div>
   </main>
 </div>
@@ -266,9 +271,12 @@ function showAllPlaces() {
 }
 
 function setLocateButtonState(label, disabled = false) {
-  const button = document.getElementById('locate-btn');
-  button.textContent = label;
-  button.disabled = disabled;
+  ['locate-btn', 'map-locate-btn'].forEach(id => {
+    const button = document.getElementById(id);
+    if (!button) return;
+    button.textContent = label;
+    button.disabled = disabled;
+  });
 }
 
 function distanceMeters(lat1, lon1, lat2, lon2) {
@@ -644,6 +652,7 @@ window.pollingMapState = () => ({
 
 document.getElementById('print-btn').addEventListener('click', printSelected);
 document.getElementById('locate-btn').addEventListener('click', showMyLocation);
+document.getElementById('map-locate-btn').addEventListener('click', showMyLocation);
 document.getElementById('share-btn').addEventListener('click', shareMap);
 document.getElementById('clear-selection-btn').addEventListener('click', clearSelectedPlace);
 document.getElementById('show-all-btn').addEventListener('click', showAllPlaces);
@@ -665,9 +674,16 @@ document.getElementById('search-input').addEventListener('blur', () => {
   if (activeQuery) collapseMobileToolbar();
 });
 
+function getPollingPlaceStampIcon() {
+  return {
+    content: '<div style="width:30px;height:30px;border:3px solid #d92d20;border-radius:50%;background:rgba(255,255,255,.95);color:#d92d20;box-shadow:0 2px 8px rgba(0,0,0,.24);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;letter-spacing:0;transform:rotate(-12deg)">투표</div>',
+    anchor: new naver.maps.Point(18, 18)
+  };
+}
+
 places.forEach((p,i)=>{
   const pos=new naver.maps.LatLng(p.lat,p.lon);
-  const marker=new naver.maps.Marker({ position: pos, map, title: p.name });
+  const marker=new naver.maps.Marker({ position: pos, map, title: p.name, icon: getPollingPlaceStampIcon() });
   const circle=new naver.maps.Circle({ map, center: pos, radius: 100, strokeColor:'#00a86b', strokeOpacity:0.85, strokeWeight:2, fillColor:'#00c73c', fillOpacity:0.13 });
   markers.push(marker); circles.push(circle);
   naver.maps.Event.addListener(marker,'click',()=>openPlace(i));
