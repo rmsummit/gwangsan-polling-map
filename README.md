@@ -147,12 +147,23 @@ node regression-check.js
 
 - `전체 보기`가 선택한 선거구/동 필터를 유지하는지 확인
 - README 사용법이 실제 동작과 일치하는지 확인
+- 투표소 좌표 보정 테이블과 좌표 해석 함수가 유지되는지 확인
+
+좌표 검수용 CSV는 아래 명령으로 생성합니다.
+
+```bash
+node coordinate-audit.js
+```
+
+좌표가 어긋난 투표소는 `index.html`의 `coordinateOverrides`에 보정 좌표를 추가합니다. 보정 좌표는 마커, 반경 100m 원, A4 인쇄 중심, 내 위치 100m 판정에 함께 적용됩니다.
 
 ## 포함 파일
 
 - `index.html`: 배포용 지도 페이지
 - `README.md`: 사용법 및 배포 안내
 - `regression-check.js`: 배포 전 회귀 점검 스크립트
+- `coordinate-audit.js`: 학교/대형부지 좌표 검수 CSV 생성 스크립트
+- `coordinate-audit.csv`: 좌표 검수 대상 목록
 - `polling-stamp.svg`: 투표소 마커 아이콘
 - `share-infographic.svg`: 카카오톡 미리보기용 인포그래픽 원본
 - `share-infographic.png`: 카카오톡 미리보기용 인포그래픽 이미지
