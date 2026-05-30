@@ -2,7 +2,10 @@ const fs = require('fs');
 
 const html = fs.readFileSync('index.html', 'utf8');
 const places = JSON.parse(html.match(/const places = (\[[\s\S]*?\]);\nconst coordinateOverrides/)[1]);
-const coordinateOverrides = new Function(`${html.match(/const coordinateOverrides = (\{[\s\S]*?\n\});/)[0]}; return coordinateOverrides;`)();
+const overrideMatch = html.match(/const coordinateOverrides = (\{[\s\S]*?\n?\});/);
+const coordinateOverrides = overrideMatch
+  ? new Function(`${overrideMatch[0]}; return coordinateOverrides;`)()
+  : {};
 
 function riskLevel(place) {
   if (/초등학교|중학교|고등학교|학교/.test(place.building)) return 'school';
