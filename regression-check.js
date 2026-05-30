@@ -48,5 +48,13 @@ assert(
   html.includes('getPlaceDisplayName(p)'),
   'Displayed polling place names must use getPlaceDisplayName.'
 );
+assert(
+  html.includes('const coordinateOverrides ='),
+  'Coordinate override table must exist for precise marker corrections.'
+);
+assert(
+  html.includes('function getPlacePosition(p)'),
+  'Map operations must resolve marker coordinates through getPlacePosition.'
+);
 
 console.log('regression checks ok');
