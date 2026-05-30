@@ -400,11 +400,12 @@ function handleDistrictChange(value) {
   selectedDong = '';
   renderFilterControls();
   updateFilteredView({ fit: true });
-  collapseMobileToolbar();
+  expandMobileToolbar();
 }
 
 function handleDongChange(value) {
   selectedDong = value;
+  collapseMobileToolbar();
   updateFilteredView({ fit: true });
   collapseMobileToolbar();
 }
