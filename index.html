@@ -194,6 +194,30 @@ function updateMapTypeControls() {
   if (current) current.textContent = currentMapType === 'satellite' ? '위성' : '일반';
 }
 
+function getCircleStyle() {
+  if (currentMapType === 'satellite') {
+    return {
+      strokeColor: '#f97316',
+      strokeOpacity: 0.95,
+      strokeWeight: 3,
+      fillColor: '#fb923c',
+      fillOpacity: 0.18
+    };
+  }
+  return {
+    strokeColor: '#00a86b',
+    strokeOpacity: 0.85,
+    strokeWeight: 2,
+    fillColor: '#00c73c',
+    fillOpacity: 0.13
+  };
+}
+
+function refreshCircleStyles() {
+  const style = getCircleStyle();
+  circles.forEach(circle => circle.setOptions(style));
+}
+
 function setMapType(type) {
   currentMapType = type === 'satellite' ? 'satellite' : 'normal';
   const mapTypeIds = naver.maps.MapTypeId || {};
@@ -203,6 +227,7 @@ function setMapType(type) {
   if (mapTypeId && typeof map.setMapTypeId === 'function') {
     map.setMapTypeId(mapTypeId);
   }
+  refreshCircleStyles();
   updateMapTypeControls();
   toggleMapTypeMenu(false);
 }
@@ -766,7 +791,7 @@ function getPollingPlaceStampIcon() {
 places.forEach((p,i)=>{
   const pos=new naver.maps.LatLng(p.lat,p.lon);
   const marker=new naver.maps.Marker({ position: pos, map, title: p.name, icon: getPollingPlaceStampIcon() });
-  const circle=new naver.maps.Circle({ map, center: pos, radius: 100, strokeColor:'#00a86b', strokeOpacity:0.85, strokeWeight:2, fillColor:'#00c73c', fillOpacity:0.13 });
+  const circle=new naver.maps.Circle({ map, center: pos, radius: 100, ...getCircleStyle() });
   markers.push(marker); circles.push(circle);
   naver.maps.Event.addListener(marker,'click',()=>openPlace(i));
   const div=document.createElement('div'); div.className='item';
