@@ -157,6 +157,11 @@ node coordinate-audit.js
 
 좌표가 어긋난 투표소는 `index.html`의 `coordinateOverrides`에 보정 좌표를 추가합니다. 보정 좌표는 마커, 반경 100m 원, A4 인쇄 중심, 내 위치 100m 판정에 함께 적용됩니다.
 
+현재 1차 보정:
+
+- 학교 POI 후보와 기존 주소 좌표가 30m 이상 차이 나는 20곳을 우선 보정
+- 보정 후보는 `school-coordinate-candidates.csv`에 기록
+
 ## 포함 파일
 
 - `index.html`: 배포용 지도 페이지
@@ -164,6 +169,7 @@ node coordinate-audit.js
 - `regression-check.js`: 배포 전 회귀 점검 스크립트
 - `coordinate-audit.js`: 학교/대형부지 좌표 검수 CSV 생성 스크립트
 - `coordinate-audit.csv`: 좌표 검수 대상 목록
+- `school-coordinate-candidates.csv`: 학교 POI 후보 좌표 비교 결과
 - `polling-stamp.svg`: 투표소 마커 아이콘
 - `share-infographic.svg`: 카카오톡 미리보기용 인포그래픽 원본
 - `share-infographic.png`: 카카오톡 미리보기용 인포그래픽 이미지
