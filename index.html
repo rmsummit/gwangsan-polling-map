@@ -352,11 +352,12 @@ function setSelectedOnlyMode(enabled) {
 function showAllPlaces() {
   printMode = false;
   activeQuery = '';
-  selectedDistrict = '';
-  selectedDong = '';
   document.getElementById('search-input').value = '';
   renderFilterControls();
-  updateFilteredView();
+  const visibleIndices = applyCurrentFilters();
+  const message = visibleIndices.length ? `${getFilterLabel(visibleIndices.length)} - 투표소를 선택하세요` : '검색 결과 없음';
+  clearSelection(message);
+  if (visibleIndices.length) fitPlaces(visibleIndices);
   closePopup();
   collapseMobileToolbar();
 }
