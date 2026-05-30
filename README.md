@@ -163,6 +163,16 @@ node coordinate-audit.js
 - 사용자가 직접 확인해 지정한 좌표만 `coordinateOverrides`에 반영합니다.
 - 보정 후보는 참고용으로만 `school-coordinate-candidates.csv`에 기록합니다.
 
+### 검수 모드
+
+마커 위치를 직접 수정하려면 공개 주소 뒤에 `?mode=review`를 붙여 접속합니다.
+
+```text
+https://rmsummit.github.io/gwangsan-polling-map/?mode=review
+```
+
+검수 모드에서는 투표소 마커를 드래그할 수 있습니다. 마커를 옮기면 반경 100m 원도 함께 이동하고, 수정 내용은 브라우저에 임시 저장됩니다. `수정 완료`를 누르면 변경된 좌표만 `marker-overrides-YYYYMMDDTHHMMSS.json` 파일로 다운로드됩니다. 이 파일을 기준으로 `coordinateOverrides`에 반영합니다.
+
 ## 포함 파일
 
 - `index.html`: 배포용 지도 페이지
