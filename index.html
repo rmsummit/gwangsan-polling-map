@@ -273,12 +273,17 @@ function setActiveItem(i) {
 }
 
 function setPrintTitle(p) {
-  document.getElementById('selected-title').textContent = p.name + ' - ' + p.address;
-  document.getElementById('print-sheet-title').innerHTML = `<h2>${escapeHtml(p.name)} 반경 100m 지도</h2><div>${escapeHtml(p.building)}</div><div>${escapeHtml(p.address)}</div>`;
+  const name = getPlaceDisplayName(p);
+  document.getElementById('selected-title').textContent = name + ' - ' + p.address;
+  document.getElementById('print-sheet-title').innerHTML = `<h2>${escapeHtml(name)} 반경 100m 지도</h2><div>${escapeHtml(p.building)}</div><div>${escapeHtml(p.address)}</div>`;
+}
+
+function getPlaceDisplayName(p) {
+  return p.name.replace(/제(\d+)투$/, '제$1투표소');
 }
 
 function getPlaceDong(p) {
-  const match = p.name.match(/^(.*?)(?:제\d+투|투표소)$/);
+  const match = p.name.match(/^(.*?)(?:제\d+투(?:표소)?|투표소)$/);
   return match ? match[1] : '';
 }
 
@@ -331,7 +336,7 @@ function openPlace(i, options = {}) {
   map.setZoom(options.print ? 18 : 17);
   setActiveItem(i);
   setPrintTitle(p);
-  info.setContent(`<div class="popup"><button class="popup-close" onclick="closePopup()" title="팝업 닫기">×</button><b>${escapeHtml(p.name)}</b><div class="meta">${escapeHtml(p.building)}<br>${escapeHtml(p.address)}</div><a href="${p.url}" target="_blank">네이버지도에서 검색</a><br><button class="popup-print" onclick="printSelected()">A4 인쇄</button></div>`);
+  info.setContent(`<div class="popup"><button class="popup-close" onclick="closePopup()" title="팝업 닫기">×</button><b>${escapeHtml(getPlaceDisplayName(p))}</b><div class="meta">${escapeHtml(p.building)}<br>${escapeHtml(p.address)}</div><a href="${p.url}" target="_blank">네이버지도에서 검색</a><br><button class="popup-print" onclick="printSelected()">A4 인쇄</button></div>`);
   info.open(map, markers[i]);
   document.getElementById('popup-close').style.display = 'inline-block';
   setSelectedOnlyMode(true);
@@ -400,8 +405,8 @@ function updateLocationSafetyStatus(lat, lon) {
   const isInside = nearest.distance <= 100;
   const distanceText = formatMeters(nearest.distance);
   const text = isInside
-    ? `경고: 가장 가까운 ${nearest.place.name} 반경 100m 안입니다. 현재 거리 약 ${distanceText}`
-    : `안전: 가장 가까운 ${nearest.place.name}까지 약 ${distanceText}로 100m 밖입니다.`;
+    ? `경고: 가장 가까운 ${getPlaceDisplayName(nearest.place)} 반경 100m 안입니다. 현재 거리 약 ${distanceText}`
+    : `안전: 가장 가까운 ${getPlaceDisplayName(nearest.place)}까지 약 ${distanceText}로 100m 밖입니다.`;
   status.className = isInside ? 'warning' : 'safe';
   status.textContent = text;
   document.getElementById('selected-title').textContent = text;
@@ -456,7 +461,7 @@ function showMyLocation() {
 }
 
 function placeSearchText(p) {
-  return `${p.name} ${p.building} ${p.address}`.toLowerCase();
+  return `${p.name} ${getPlaceDisplayName(p)} ${p.building} ${p.address}`.toLowerCase();
 }
 
 function matchesQuery(i) {
@@ -792,13 +797,13 @@ function getPollingPlaceStampIcon() {
 
 places.forEach((p,i)=>{
   const pos=new naver.maps.LatLng(p.lat,p.lon);
-  const marker=new naver.maps.Marker({ position: pos, map, title: p.name, icon: getPollingPlaceStampIcon() });
+  const marker=new naver.maps.Marker({ position: pos, map, title: getPlaceDisplayName(p), icon: getPollingPlaceStampIcon() });
   const circle=new naver.maps.Circle({ map, center: pos, radius: 100, ...getCircleStyle() });
   markers.push(marker); circles.push(circle);
   naver.maps.Event.addListener(marker,'click',()=>openPlace(i));
   const div=document.createElement('div'); div.className='item';
   div.dataset.index = i;
-  div.innerHTML=`<div><div class="name">${i+1}. ${escapeHtml(p.name)}</div><div class="addr">${escapeHtml(p.building)}<br>${escapeHtml(p.address)}</div></div><button class="icon-btn" type="button" title="이 투표소 A4 인쇄">인쇄</button>`;
+  div.innerHTML=`<div><div class="name">${i+1}. ${escapeHtml(getPlaceDisplayName(p))}</div><div class="addr">${escapeHtml(p.building)}<br>${escapeHtml(p.address)}</div></div><button class="icon-btn" type="button" title="이 투표소 A4 인쇄">인쇄</button>`;
   div.onclick=(event)=>{ togglePanel(false); openPlace(i); };
   div.querySelector('button').onclick=(event)=>{ event.stopPropagation(); openPlace(i, { print: true }); printSelected(); };
   listItems.push(div);
