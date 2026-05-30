@@ -43,6 +43,14 @@ h1{font-size:18px;margin:16px 16px 8px}p{margin:0 16px 12px;color:#555;font-size
 .tool-btn{height:34px;padding:0 10px;font-weight:700;white-space:nowrap;flex:0 0 auto}
 #popup-close{display:none;position:absolute;top:62px;left:14px;z-index:5}
 #print-sheet-title{display:none}
+body.printing-map{background:#fff}
+body.printing-map #layout{display:block;height:auto}
+body.printing-map #panel,body.printing-map #toolbar,body.printing-map #popup-close{display:none!important}
+body.printing-map #map-wrap{width:min(calc(100vw - 28px),1100px);aspect-ratio:277/190;height:auto;margin:0 auto;background:#fff}
+body.printing-map #map{width:100%;height:100%;border:1px solid #222;box-sizing:border-box}
+body.printing-map #print-sheet-title{display:block;position:absolute;left:16px;right:16px;bottom:16px;z-index:10;background:rgba(255,255,255,.92);border:1px solid #555;padding:10px 12px;font-size:12px;line-height:1.3}
+body.printing-map #print-sheet-title h2{font-size:16px;margin:0 0 4px 0}
+body.printing-map #print-sheet-title div{font-size:12px;color:#333}
 .popup{position:relative;min-width:240px;padding:12px 36px 12px 12px;line-height:1.45}
 .popup b{font-size:15px}.popup .meta{color:#555;margin:4px 0 8px}.popup a{color:#047a44}
 .popup-close{position:absolute;right:8px;top:8px;width:24px;height:24px;border:1px solid #cfd7d2;border-radius:50%;background:#fff;cursor:pointer;font-weight:700}
@@ -440,8 +448,7 @@ function focusSelectedForPrint() {
   map.setZoom(18);
   naver.maps.Event.trigger(map, 'resize');
   map.setCenter(pos);
-  map.panTo(pos);
-  [50, 150, 350, 700].forEach(delay => {
+  [40, 120, 260, 520, 850].forEach(delay => {
     setTimeout(() => {
       naver.maps.Event.trigger(map, 'resize');
       map.setZoom(18);
@@ -450,7 +457,35 @@ function focusSelectedForPrint() {
   });
 }
 
-function printSelected() {
+function prepareSelectedForPrint() {
+  closePopup();
+  setSelectedOnlyMode(true);
+  document.body.classList.add('printing-map');
+  collapseMobileToolbar();
+  focusSelectedForPrint();
+}
+
+function cleanupPrintLayout() {
+  document.body.classList.remove('printing-map');
+  naver.maps.Event.trigger(map, 'resize');
+}
+
+function waitForPrintCenter() {
+  return new Promise(resolve => {
+    requestAnimationFrame(() => {
+      focusSelectedForPrint();
+      requestAnimationFrame(() => {
+        focusSelectedForPrint();
+        setTimeout(() => {
+          focusSelectedForPrint();
+          resolve();
+        }, 650);
+      });
+    });
+  });
+}
+
+async function printSelected() {
   if (selectedIndex === null) {
     const firstVisibleIndex = places.findIndex((_, idx) => matchesQuery(idx));
     if (firstVisibleIndex === -1) {
@@ -461,13 +496,12 @@ function printSelected() {
   } else {
     openPlace(selectedIndex, { print: true });
   }
-  closePopup();
-  setSelectedOnlyMode(true);
-  focusSelectedForPrint();
+  prepareSelectedForPrint();
+  await waitForPrintCenter();
   setTimeout(() => {
     focusSelectedForPrint();
     window.print();
-  }, 550);
+  }, 120);
 }
 
 async function shareMap() {
@@ -488,6 +522,7 @@ async function shareMap() {
 }
 
 window.addEventListener('afterprint', () => {
+  cleanupPrintLayout();
   applyCurrentFilters();
   if (selectedIndex !== null) {
     const p = places[selectedIndex];
@@ -502,9 +537,7 @@ window.addEventListener('beforeprint', () => {
     selectedIndex = firstVisibleIndex;
     setPrintTitle(places[selectedIndex]);
   }
-  closePopup();
-  setSelectedOnlyMode(true);
-  focusSelectedForPrint();
+  prepareSelectedForPrint();
   requestAnimationFrame(() => focusSelectedForPrint());
 });
 
