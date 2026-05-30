@@ -130,6 +130,7 @@ Windows: Ctrl + Shift + R
 
 - `index.html`: 배포용 지도 페이지
 - `README.md`: 사용법 및 배포 안내
+- `polling-stamp.svg`: 투표소 마커 아이콘
 - `share-infographic.svg`: 카카오톡 미리보기용 인포그래픽 원본
 - `share-infographic.png`: 카카오톡 미리보기용 인포그래픽 이미지
 - `gwangsan_polling_places_with_naver_coordinates.xlsx`: 투표소 주소와 네이버 지오코딩 좌표
