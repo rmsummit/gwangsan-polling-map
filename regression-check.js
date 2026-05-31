@@ -25,6 +25,11 @@ function assert(condition, message) {
 const showAllPlaces = getFunctionBody('showAllPlaces');
 const openPlace = getFunctionBody('openPlace');
 const showHoverLabel = getFunctionBody('showHoverLabel');
+const setActiveItem = getFunctionBody('setActiveItem');
+const refreshPollingMarkerIcons = getFunctionBody('refreshPollingMarkerIcons');
+const refreshCircleStyles = getFunctionBody('refreshCircleStyles');
+const getPollingPlaceStampIcon = getFunctionBody('getPollingPlaceStampIcon');
+const getCircleStyle = getFunctionBody('getCircleStyle');
 const getPlaceDisplayName = getFunctionBody('getPlaceDisplayName');
 
 assert(
@@ -46,6 +51,26 @@ assert(
 assert(
   /previousSelectedIndex/.test(showAllPlaces) && /직전 확인/.test(showAllPlaces),
   'showAllPlaces must keep the last selected polling place visible in the toolbar.'
+);
+assert(
+  /refreshPollingMarkerIcons\(\)/.test(setActiveItem) && /refreshCircleStyles\(\)/.test(setActiveItem),
+  'Changing the active place must refresh map marker and circle emphasis.'
+);
+assert(
+  /getPollingPlaceStampIcon\(idx === selectedIndex\)/.test(refreshPollingMarkerIcons),
+  'The previously selected marker must use a highlighted icon.'
+);
+assert(
+  /getCircleStyle\(idx === selectedIndex\)/.test(refreshCircleStyles),
+  'The previously selected circle must use highlighted circle styling.'
+);
+assert(
+  /border:3px solid #facc15/.test(getPollingPlaceStampIcon),
+  'Highlighted marker icon must include a visible yellow ring.'
+);
+assert(
+  /extraWeight/.test(getCircleStyle) && /highlight \? 120 : 80/.test(getCircleStyle),
+  'Highlighted 100m circle must be visually stronger than normal circles.'
 );
 assert(
   /isMobileLayout\(\)/.test(showHoverLabel) && /hoverInfo\.open/.test(showHoverLabel),
