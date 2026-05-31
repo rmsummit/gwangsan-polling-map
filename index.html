@@ -210,6 +210,7 @@ let printMode = false;
 let activeQuery = '';
 let selectedDistrict = '';
 let selectedDong = '';
+let selectedFilterContext = null;
 let currentMapType = 'normal';
 
 function isMobileLayout() {
@@ -446,6 +447,7 @@ function getFilterLabel(visibleCount) {
 
 function clearSelection(message = '투표소를 선택하세요') {
   selectedIndex = null;
+  selectedFilterContext = null;
   setActiveItem(null);
   document.getElementById('selected-title').textContent = message;
   document.getElementById('print-sheet-title').innerHTML = '';
@@ -461,6 +463,10 @@ function clearSelectedPlace() {
 }
 
 function openPlace(i, options = {}) {
+  selectedFilterContext = {
+    district: selectedDistrict,
+    dong: selectedDong
+  };
   selectedIndex = i;
   const p=places[i];
   const pos=getPlacePosition(p);
@@ -487,16 +493,30 @@ function setSelectedOnlyMode(enabled) {
 }
 
 function showAllPlaces() {
-  // Keep district/dong filters: "전체 보기" means all places in the current filter context.
+  // Return from a single polling-place view to the district/dong context that opened it.
+  const previousSelectedIndex = selectedIndex;
+  if (selectedFilterContext) {
+    selectedDistrict = selectedFilterContext.district;
+    selectedDong = selectedFilterContext.dong;
+  }
   printMode = false;
   activeQuery = '';
   document.getElementById('search-input').value = '';
   renderFilterControls();
   const visibleIndices = applyCurrentFilters();
-  const message = visibleIndices.length ? `${getFilterLabel(visibleIndices.length)} - 투표소를 선택하세요` : '검색 결과 없음';
-  clearSelection(message);
+  if (previousSelectedIndex !== null && visibleIndices.includes(previousSelectedIndex)) {
+    selectedIndex = previousSelectedIndex;
+    setActiveItem(previousSelectedIndex);
+    const previousPlace = places[previousSelectedIndex];
+    setPrintTitle(previousPlace);
+    document.getElementById('selected-title').textContent = `직전 확인: ${getPlaceDisplayName(previousPlace)} - ${previousPlace.address}`;
+  } else {
+    const message = visibleIndices.length ? `${getFilterLabel(visibleIndices.length)} - 투표소를 선택하세요` : '검색 결과 없음';
+    clearSelection(message);
+  }
   if (visibleIndices.length) fitPlaces(visibleIndices);
   closePopup();
+  selectedFilterContext = null;
   collapseMobileToolbar();
 }
 
@@ -677,6 +697,7 @@ function renderFilterControls() {
 }
 
 function handleDistrictChange(value) {
+  selectedFilterContext = null;
   selectedDistrict = value;
   selectedDong = '';
   renderFilterControls();
@@ -685,6 +706,7 @@ function handleDistrictChange(value) {
 }
 
 function handleDongChange(value) {
+  selectedFilterContext = null;
   selectedDong = value;
   collapseMobileToolbar();
   updateFilteredView({ fit: true });
