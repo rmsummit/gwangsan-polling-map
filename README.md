@@ -162,7 +162,7 @@ node coordinate-audit.js
 - 자동 후보 좌표는 바로 반영하지 않습니다.
 - 사용자가 직접 확인해 지정한 좌표만 `coordinateOverrides`에 반영합니다.
 - 보정 후보는 참고용으로만 `school-coordinate-candidates.csv`에 기록합니다.
-- 현재 수동 검수 좌표 22곳을 반영했습니다.
+- 현재 수동 검수 좌표 69곳을 반영했습니다.
 
 ### 검수 모드
 
