@@ -98,6 +98,22 @@ body.printing-map #print-sheet-title div{font-size:12px;color:#333}
   body.mobile-toolbar-collapsed #selected-title{grid-column:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   body.mobile-toolbar-collapsed #panel-toggle-btn{width:auto;padding:0 12px}
 }
+@media(orientation:landscape) and (pointer:coarse) and (max-width:1000px){
+  #layout{display:block;height:100%}
+  #map-wrap{height:100%;width:100%}
+  #panel{position:absolute;left:8px;top:58px;bottom:8px;z-index:4;width:min(320px,42vw);max-width:calc(100vw - 16px);border-right:0;border-bottom:0;border-radius:8px;box-shadow:0 3px 14px rgba(0,0,0,.22)}
+  body.panel-collapsed #panel{opacity:0;pointer-events:none;transform:translateX(-12px)}
+  #toolbar{left:8px;right:auto;top:8px;width:min(560px,calc(100vw - 16px));box-sizing:border-box;display:grid;grid-template-columns:auto minmax(92px,1fr) minmax(92px,1fr) minmax(160px,1.4fr) auto auto auto;gap:6px;align-items:center;padding:7px}
+  #selected-title{grid-column:1/-1;min-width:0;max-width:none;font-size:12px}
+  #search-input{min-width:0;max-width:none;width:100%;box-sizing:border-box}
+  .filter-select,.tool-btn{min-width:0;width:100%;box-sizing:border-box}
+  body.mobile-toolbar-collapsed #toolbar{grid-template-columns:auto auto minmax(0,1fr);width:min(480px,calc(100vw - 16px))}
+  body.mobile-toolbar-collapsed #toolbar > :not(#panel-toggle-btn):not(#result-count):not(#selected-title){display:none}
+  body.mobile-toolbar-collapsed #selected-title{grid-column:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #map-control-stack{right:10px;top:58px}
+  #map-locate-btn{right:10px;bottom:18px}
+  #location-status{left:8px;right:8px;bottom:8px;font-size:12px}
+}
 @page{size:A4 landscape;margin:0}
 @media print{
   html,body{height:auto;margin:0;background:#fff}
@@ -185,7 +201,7 @@ const coordinateOverrides = {
 const reviewMode = new URLSearchParams(window.location.search).get('mode') === 'review';
 const reviewStorageKey = 'gwangsan-polling-map-review-draft';
 let reviewCoordinateDraft = loadReviewCoordinateDraft();
-const mobileMediaQuery = window.matchMedia('(max-width: 800px)');
+const mobileMediaQuery = window.matchMedia('(max-width: 800px), (orientation: landscape) and (pointer: coarse) and (max-width: 1000px)');
 const isMobileViewport = mobileMediaQuery.matches;
 const map = new naver.maps.Map('map', { center: new naver.maps.LatLng(35.17793409368421, 126.80898238210533), zoom: 12, mapTypeControl: false });
 const info = new naver.maps.InfoWindow({ maxWidth: 360 });
