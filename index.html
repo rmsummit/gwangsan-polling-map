@@ -76,6 +76,8 @@ body.printing-map #print-sheet-title div{font-size:12px;color:#333}
 .popup b{font-size:15px}.popup .meta{color:#555;margin:4px 0 8px}.popup a{color:#047a44}
 .popup-close{position:absolute;right:8px;top:8px;width:24px;height:24px;border:1px solid #cfd7d2;border-radius:50%;background:#fff;cursor:pointer;font-weight:700}
 .popup-print{margin-top:8px;border:1px solid #03a85a;background:#03c75a;color:#fff;border-radius:6px;padding:6px 9px;cursor:pointer;font-weight:700}
+.hover-label{padding:8px 10px;line-height:1.35;white-space:nowrap}
+.hover-label b{display:block;font-size:13px;color:#111}.hover-label span{display:block;margin-top:2px;font-size:12px;color:#555}
 @media(max-width:800px){
   #layout{grid-template-columns:1fr;grid-template-rows:38% 62%}
   body.panel-collapsed #layout{grid-template-columns:1fr;grid-template-rows:0 1fr}
@@ -187,6 +189,7 @@ const mobileMediaQuery = window.matchMedia('(max-width: 800px)');
 const isMobileViewport = mobileMediaQuery.matches;
 const map = new naver.maps.Map('map', { center: new naver.maps.LatLng(35.17793409368421, 126.80898238210533), zoom: 12, mapTypeControl: false });
 const info = new naver.maps.InfoWindow({ maxWidth: 360 });
+const hoverInfo = new naver.maps.InfoWindow({ maxWidth: 260 });
 const markers=[];
 const circles=[];
 const listItems=[];
@@ -463,6 +466,7 @@ function clearSelectedPlace() {
 }
 
 function openPlace(i, options = {}) {
+  hoverInfo.close();
   selectedFilterContext = {
     district: selectedDistrict,
     dong: selectedDong
@@ -484,6 +488,17 @@ function openPlace(i, options = {}) {
 function closePopup() {
   info.close();
   document.getElementById('popup-close').style.display = 'none';
+}
+
+function showHoverLabel(i) {
+  if (isMobileLayout()) return;
+  const p = places[i];
+  hoverInfo.setContent(`<div class="hover-label"><b>${escapeHtml(getPlaceDisplayName(p))}</b><span>${escapeHtml(p.building)}</span></div>`);
+  hoverInfo.open(map, markers[i]);
+}
+
+function hideHoverLabel() {
+  hoverInfo.close();
 }
 
 function setSelectedOnlyMode(enabled) {
@@ -963,6 +978,8 @@ places.forEach((p,i)=>{
   const circle=new naver.maps.Circle({ map, center: pos, radius: 100, ...getCircleStyle() });
   markers.push(marker); circles.push(circle);
   naver.maps.Event.addListener(marker,'click',()=>openPlace(i));
+  naver.maps.Event.addListener(marker, 'mouseover', () => showHoverLabel(i));
+  naver.maps.Event.addListener(marker, 'mouseout', hideHoverLabel);
   if (reviewMode) {
     naver.maps.Event.addListener(marker, 'dragend', () => {
       const position = marker.getPosition();
