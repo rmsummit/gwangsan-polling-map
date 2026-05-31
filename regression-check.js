@@ -7,7 +7,8 @@ function getFunctionBody(name) {
   const marker = `function ${name}(`;
   const start = html.indexOf(marker);
   if (start === -1) throw new Error(`${name} not found`);
-  const bodyStart = html.indexOf('{', start);
+  const signatureEnd = html.indexOf(') {', start);
+  const bodyStart = signatureEnd === -1 ? html.indexOf('{', start) : signatureEnd + 2;
   let depth = 0;
   for (let i = bodyStart; i < html.length; i += 1) {
     if (html[i] === '{') depth += 1;
@@ -22,19 +23,28 @@ function assert(condition, message) {
 }
 
 const showAllPlaces = getFunctionBody('showAllPlaces');
+const openPlace = getFunctionBody('openPlace');
 const getPlaceDisplayName = getFunctionBody('getPlaceDisplayName');
 
 assert(
-  !/selectedDistrict\s*=/.test(showAllPlaces),
-  'showAllPlaces must keep the selected district filter.'
+  /selectedFilterContext/.test(openPlace),
+  'openPlace must remember the active district/dong context before showing one place.'
 );
 assert(
-  !/selectedDong\s*=/.test(showAllPlaces),
-  'showAllPlaces must keep the selected dong filter.'
+  /selectedDistrict\s*=\s*selectedFilterContext\.district/.test(showAllPlaces),
+  'showAllPlaces must restore the district filter that opened the selected place.'
+);
+assert(
+  /selectedDong\s*=\s*selectedFilterContext\.dong/.test(showAllPlaces),
+  'showAllPlaces must restore the dong filter that opened the selected place.'
 );
 assert(
   /applyCurrentFilters\(\)/.test(showAllPlaces),
   'showAllPlaces must return to the current filtered marker set.'
+);
+assert(
+  /previousSelectedIndex/.test(showAllPlaces) && /직전 확인/.test(showAllPlaces),
+  'showAllPlaces must keep the last selected polling place visible in the toolbar.'
 );
 assert(
   readme.includes('선택한 선거구/동은 유지'),
