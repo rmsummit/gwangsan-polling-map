@@ -56,6 +56,14 @@ assert(
   'Polling place markers must wire desktop hover label events.'
 );
 assert(
+  html.includes('@media(orientation:landscape) and (pointer:coarse)') && html.includes('#layout{display:block;height:100%}'),
+  'Mobile landscape mode must keep the map full-screen and overlay the menu.'
+);
+assert(
+  html.includes('(orientation: landscape) and (pointer: coarse) and (max-width: 1000px)'),
+  'Mobile JS layout detection must include phone landscape orientation.'
+);
+assert(
   readme.includes('선택한 선거구/동은 유지'),
   'README must document that 전체 보기 keeps district/dong filters.'
 );
