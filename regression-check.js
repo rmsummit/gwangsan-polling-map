@@ -24,6 +24,7 @@ function assert(condition, message) {
 
 const showAllPlaces = getFunctionBody('showAllPlaces');
 const openPlace = getFunctionBody('openPlace');
+const showHoverLabel = getFunctionBody('showHoverLabel');
 const getPlaceDisplayName = getFunctionBody('getPlaceDisplayName');
 
 assert(
@@ -45,6 +46,14 @@ assert(
 assert(
   /previousSelectedIndex/.test(showAllPlaces) && /직전 확인/.test(showAllPlaces),
   'showAllPlaces must keep the last selected polling place visible in the toolbar.'
+);
+assert(
+  /isMobileLayout\(\)/.test(showHoverLabel) && /hoverInfo\.open/.test(showHoverLabel),
+  'Hover labels must open on desktop only.'
+);
+assert(
+  html.includes("marker, 'mouseover'") && html.includes("marker, 'mouseout'"),
+  'Polling place markers must wire desktop hover label events.'
 );
 assert(
   readme.includes('선택한 선거구/동은 유지'),
