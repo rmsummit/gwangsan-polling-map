@@ -253,28 +253,30 @@ function updateMapTypeControls() {
   if (current) current.textContent = currentMapType === 'satellite' ? '위성' : '일반';
 }
 
-function getCircleStyle() {
+function getCircleStyle(highlight = false) {
+  const extraWeight = highlight ? 2 : 0;
   if (currentMapType === 'satellite') {
     return {
       strokeColor: '#f97316',
       strokeOpacity: 0.95,
-      strokeWeight: 3,
+      strokeWeight: 3 + extraWeight,
       fillColor: '#fb923c',
-      fillOpacity: 0.18
+      fillOpacity: highlight ? 0.25 : 0.18,
+      zIndex: highlight ? 120 : 80
     };
   }
   return {
     strokeColor: '#00a86b',
     strokeOpacity: 0.85,
-    strokeWeight: 2,
+    strokeWeight: 2 + extraWeight,
     fillColor: '#00c73c',
-    fillOpacity: 0.13
+    fillOpacity: highlight ? 0.2 : 0.13,
+    zIndex: highlight ? 120 : 80
   };
 }
 
 function refreshCircleStyles() {
-  const style = getCircleStyle();
-  circles.forEach(circle => circle.setOptions(style));
+  circles.forEach((circle, idx) => circle.setOptions(getCircleStyle(idx === selectedIndex)));
 }
 
 function setMapType(type) {
@@ -300,8 +302,10 @@ function getPollingMarkerSize() {
 }
 
 function refreshPollingMarkerIcons() {
-  const icon = getPollingPlaceStampIcon();
-  markers.forEach(marker => marker.setIcon(icon));
+  markers.forEach((marker, idx) => {
+    marker.setIcon(getPollingPlaceStampIcon(idx === selectedIndex));
+    if (typeof marker.setZIndex === 'function') marker.setZIndex(idx === selectedIndex ? 160 : 100);
+  });
 }
 
 function setMobileToolbarCollapsed(collapsed) {
@@ -329,6 +333,8 @@ function escapeHtml(value) {
 function setActiveItem(i) {
   document.querySelectorAll('.item').forEach((el, idx) => el.classList.toggle('active', idx === i));
   document.querySelectorAll('.item').forEach(el => el.classList.toggle('active', Number(el.dataset.index) === i));
+  refreshPollingMarkerIcons();
+  refreshCircleStyles();
 }
 
 function setPrintTitle(p) {
@@ -978,8 +984,17 @@ document.getElementById('search-input').addEventListener('blur', () => {
   if (activeQuery) collapseMobileToolbar();
 });
 
-function getPollingPlaceStampIcon() {
+function getPollingPlaceStampIcon(highlight = false) {
   const size = getPollingMarkerSize();
+  if (highlight) {
+    const outerSize = size + 12;
+    const imageSize = size + 4;
+    return {
+      content: `<div style="width:${outerSize}px;height:${outerSize}px;border:3px solid #facc15;border-radius:50%;background:#fff;box-shadow:0 0 0 2px rgba(17,24,39,.45),0 3px 10px rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center;box-sizing:border-box"><img src="polling-stamp.svg" alt="" style="width:${imageSize}px;height:${imageSize}px;display:block"></div>`,
+      size: new naver.maps.Size(outerSize, outerSize),
+      anchor: new naver.maps.Point(outerSize / 2, outerSize / 2)
+    };
+  }
   return {
     url: 'polling-stamp.svg',
     size: new naver.maps.Size(size, size),
