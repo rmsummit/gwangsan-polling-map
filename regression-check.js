@@ -89,6 +89,21 @@ assert(
   'Mobile JS layout detection must include phone landscape orientation.'
 );
 assert(
+  html.includes('@page{size:A4 landscape;margin:0}') &&
+  html.includes('width:min(100vw,calc(100vh * 297 / 210))') &&
+  html.includes('height:min(100vh,calc(100vw * 210 / 297))'),
+  'Screen print preview must preserve the A4 landscape aspect ratio without stretching.'
+);
+assert(
+  html.includes('#map,#map>div{position:absolute!important;inset:0!important;height:100%!important;width:100%!important') &&
+  html.includes('body.printing-map #map,body.printing-map #map>div'),
+  'Print mode must force the Naver map container and inner viewport to fill the A4 page.'
+);
+assert(
+  html.includes('min-height:18mm') && html.includes('bottom:4mm'),
+  'Print information box must stay fixed at the bottom of the A4 page.'
+);
+assert(
   readme.includes('선택한 선거구/동은 유지'),
   'README must document that 전체 보기 keeps district/dong filters.'
 );
