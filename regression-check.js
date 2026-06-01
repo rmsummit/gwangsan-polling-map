@@ -89,6 +89,11 @@ assert(
   'Mobile JS layout detection must include phone landscape orientation.'
 );
 assert(
+  html.includes("collapsed ? '목록 열기' : '지도 보기'") &&
+  html.includes('body.mobile-toolbar-collapsed #panel-toggle-btn{width:auto;min-width:78px'),
+  'Mobile collapsed toolbar must keep the 목록 열기 button visible.'
+);
+assert(
   html.includes('@page{size:A4 landscape;margin:0}') &&
   html.includes('width:min(100vw,calc(100vh * 297 / 210))') &&
   html.includes('height:min(100vh,calc(100vw * 210 / 297))'),
