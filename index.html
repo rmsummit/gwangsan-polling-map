@@ -111,6 +111,7 @@ body.printing-map #print-sheet-title div{font-size:12px;color:#333}
   body.mobile-toolbar-collapsed #toolbar{grid-template-columns:auto auto minmax(0,1fr);width:min(480px,calc(100vw - 16px))}
   body.mobile-toolbar-collapsed #toolbar > :not(#panel-toggle-btn):not(#result-count):not(#selected-title){display:none}
   body.mobile-toolbar-collapsed #selected-title{grid-column:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body.mobile-toolbar-collapsed #panel-toggle-btn{width:auto;min-width:78px;padding:0 12px}
   #map-control-stack{right:10px;top:58px}
   #map-locate-btn{right:10px;bottom:18px}
   #location-status{left:8px;right:8px;bottom:8px;font-size:12px}
@@ -363,7 +364,7 @@ function setMobileToolbarCollapsed(collapsed) {
     return;
   }
   document.body.classList.toggle('mobile-toolbar-collapsed', collapsed);
-  document.getElementById('panel-toggle-btn').textContent = collapsed ? '조회 열기' : '지도 보기';
+  document.getElementById('panel-toggle-btn').textContent = collapsed ? '목록 열기' : '지도 보기';
   setTimeout(() => naver.maps.Event.trigger(map, 'resize'), 160);
 }
 
