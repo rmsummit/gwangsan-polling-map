@@ -358,13 +358,25 @@ function refreshPollingMarkerIcons() {
   });
 }
 
+function updatePanelToggleLabel() {
+  const button = document.getElementById('panel-toggle-btn');
+  if (!button) return;
+  const panelClosed = document.body.classList.contains('panel-collapsed');
+  if (isMobileLayout()) {
+    button.textContent = panelClosed ? '목록 열기' : '지도 보기';
+  } else {
+    button.textContent = panelClosed ? '목록 열기' : '목록 닫기';
+  }
+}
+
 function setMobileToolbarCollapsed(collapsed) {
   if (!isMobileLayout()) {
     document.body.classList.remove('mobile-toolbar-collapsed');
+    updatePanelToggleLabel();
     return;
   }
   document.body.classList.toggle('mobile-toolbar-collapsed', collapsed);
-  document.getElementById('panel-toggle-btn').textContent = collapsed ? '목록 열기' : '지도 보기';
+  updatePanelToggleLabel();
   setTimeout(() => naver.maps.Event.trigger(map, 'resize'), 160);
 }
 
@@ -817,13 +829,23 @@ function updateFilteredView(options = {}) {
 
 function togglePanel(forceOpen) {
   if (isMobileLayout()) {
-    setMobileToolbarCollapsed(!document.body.classList.contains('mobile-toolbar-collapsed'));
+    const shouldOpen = forceOpen ?? document.body.classList.contains('panel-collapsed');
+    document.body.classList.toggle('panel-collapsed', !shouldOpen);
+    setMobileToolbarCollapsed(true);
+    updatePanelToggleLabel();
+    setTimeout(() => {
+      naver.maps.Event.trigger(map, 'resize');
+      if (selectedIndex !== null) {
+        const p = places[selectedIndex];
+        map.setCenter(getPlacePosition(p));
+      }
+    }, 180);
     return;
   }
   const body = document.body;
   const shouldOpen = forceOpen ?? body.classList.contains('panel-collapsed');
   body.classList.toggle('panel-collapsed', !shouldOpen);
-  document.getElementById('panel-toggle-btn').textContent = shouldOpen ? '목록 닫기' : '목록 열기';
+  updatePanelToggleLabel();
   setTimeout(() => {
     naver.maps.Event.trigger(map, 'resize');
     if (selectedIndex !== null) {
@@ -1088,7 +1110,7 @@ mobileMediaQuery.addEventListener('change', event => {
     setMobileToolbarCollapsed(true);
   } else {
     document.body.classList.remove('mobile-toolbar-collapsed');
-    document.getElementById('panel-toggle-btn').textContent = document.body.classList.contains('panel-collapsed') ? '목록 열기' : '목록 닫기';
+    updatePanelToggleLabel();
   }
 });
 
