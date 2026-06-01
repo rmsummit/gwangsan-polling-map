@@ -31,6 +31,8 @@ const refreshCircleStyles = getFunctionBody('refreshCircleStyles');
 const getPollingPlaceStampIcon = getFunctionBody('getPollingPlaceStampIcon');
 const getCircleStyle = getFunctionBody('getCircleStyle');
 const updatePanelToggleLabel = getFunctionBody('updatePanelToggleLabel');
+const updateFilterToggleLabel = getFunctionBody('updateFilterToggleLabel');
+const toggleFilterToolbar = getFunctionBody('toggleFilterToolbar');
 const togglePanel = getFunctionBody('togglePanel');
 const getPlaceDisplayName = getFunctionBody('getPlaceDisplayName');
 
@@ -91,10 +93,21 @@ assert(
   'Mobile JS layout detection must include phone landscape orientation.'
 );
 assert(
-  /button\.textContent = panelClosed \? '목록 열기' : '지도 보기'/.test(updatePanelToggleLabel) &&
   /button\.textContent = panelClosed \? '목록 열기' : '목록 닫기'/.test(updatePanelToggleLabel) &&
   html.includes('body.mobile-toolbar-collapsed #panel-toggle-btn{width:auto;min-width:78px'),
-  'Mobile and desktop panel toggle labels must match their actual panel behavior.'
+  'The list panel toggle must only describe opening and closing the polling-place list.'
+);
+assert(
+  /조회 열기/.test(updateFilterToggleLabel) &&
+  /지도 보기/.test(updateFilterToggleLabel) &&
+  html.includes('id="filter-toggle-btn"') &&
+  html.includes("document.getElementById('filter-toggle-btn').addEventListener('click', toggleFilterToolbar)"),
+  'Mobile must have a dedicated query/filter toolbar toggle.'
+);
+assert(
+  /document\.body\.classList\.add\('panel-collapsed'\)/.test(toggleFilterToolbar) &&
+  /setMobileToolbarCollapsed\(!shouldOpen\)/.test(toggleFilterToolbar),
+  'Opening the mobile query toolbar must close the list panel and expand filter controls.'
 );
 assert(
   /document\.body\.classList\.toggle\('panel-collapsed', !shouldOpen\)/.test(togglePanel) &&
