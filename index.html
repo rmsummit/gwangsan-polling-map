@@ -42,6 +42,7 @@ h1{font-size:18px;margin:16px 16px 8px}p{margin:0 16px 12px;color:#555;font-size
 #search-input,.filter-select{height:34px;border:1px solid #cfd7d2;border-radius:6px;background:#fff;padding:0 10px;font-size:13px}
 #search-input{min-width:180px;max-width:280px;flex:1}
 .filter-select{min-width:112px;font-weight:700;color:#111}
+#filter-toggle-btn{display:none}
 #result-count{font-size:12px;color:#047a44;font-weight:700;white-space:nowrap}
 .tool-btn{height:34px;padding:0 10px;font-weight:700;white-space:nowrap;flex:0 0 auto}
 #popup-close{display:none;position:absolute;top:62px;left:14px;z-index:5}
@@ -91,13 +92,15 @@ body.printing-map #print-sheet-title div{font-size:12px;color:#333}
   #review-toolbar{left:8px;right:8px;bottom:8px;flex-wrap:wrap}
   #review-status{flex-basis:100%}
   #selected-title{grid-column:1/-1;min-width:0;max-width:none;font-size:12px;line-height:1.25}
+  #filter-toggle-btn{display:block}
   #result-count{font-size:12px}
   #search-input{grid-column:1/-1;min-width:0;max-width:none;width:100%;box-sizing:border-box;order:0}
   .filter-select,.tool-btn{min-width:0;width:100%;box-sizing:border-box}
-  body.mobile-toolbar-collapsed #toolbar{grid-template-columns:auto auto minmax(0,1fr)}
-  body.mobile-toolbar-collapsed #toolbar > :not(#panel-toggle-btn):not(#result-count):not(#selected-title){display:none}
+  body.mobile-toolbar-collapsed #toolbar{grid-template-columns:auto auto auto minmax(0,1fr)}
+  body.mobile-toolbar-collapsed #toolbar > :not(#panel-toggle-btn):not(#filter-toggle-btn):not(#result-count):not(#selected-title){display:none}
   body.mobile-toolbar-collapsed #selected-title{grid-column:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   body.mobile-toolbar-collapsed #panel-toggle-btn{width:auto;padding:0 12px}
+  body.mobile-toolbar-collapsed #filter-toggle-btn{width:auto;padding:0 12px}
 }
 @media(orientation:landscape) and (pointer:coarse) and (max-width:1000px){
   #layout{display:block;height:100%}
@@ -108,10 +111,11 @@ body.printing-map #print-sheet-title div{font-size:12px;color:#333}
   #selected-title{grid-column:1/-1;min-width:0;max-width:none;font-size:12px}
   #search-input{min-width:0;max-width:none;width:100%;box-sizing:border-box}
   .filter-select,.tool-btn{min-width:0;width:100%;box-sizing:border-box}
-  body.mobile-toolbar-collapsed #toolbar{grid-template-columns:auto auto minmax(0,1fr);width:min(480px,calc(100vw - 16px))}
-  body.mobile-toolbar-collapsed #toolbar > :not(#panel-toggle-btn):not(#result-count):not(#selected-title){display:none}
+  body.mobile-toolbar-collapsed #toolbar{grid-template-columns:auto auto auto minmax(0,1fr);width:min(560px,calc(100vw - 16px))}
+  body.mobile-toolbar-collapsed #toolbar > :not(#panel-toggle-btn):not(#filter-toggle-btn):not(#result-count):not(#selected-title){display:none}
   body.mobile-toolbar-collapsed #selected-title{grid-column:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   body.mobile-toolbar-collapsed #panel-toggle-btn{width:auto;min-width:78px;padding:0 12px}
+  body.mobile-toolbar-collapsed #filter-toggle-btn{width:auto;min-width:78px;padding:0 12px}
   #map-control-stack{right:10px;top:58px}
   #map-locate-btn{right:10px;bottom:18px}
   #location-status{left:8px;right:8px;bottom:8px;font-size:12px}
@@ -142,6 +146,7 @@ body.printing-map #print-sheet-title div{font-size:12px;color:#333}
     <div id="print-sheet-title"></div>
     <div id="toolbar">
       <button id="panel-toggle-btn" class="tool-btn" type="button">목록 열기</button>
+      <button id="filter-toggle-btn" class="tool-btn" type="button">조회 열기</button>
       <select id="district-select" class="filter-select" title="선거구 선택"></select>
       <select id="dong-select" class="filter-select" title="동 선택"></select>
       <input id="search-input" type="search" placeholder="동/투표소/주소 검색">
@@ -362,21 +367,25 @@ function updatePanelToggleLabel() {
   const button = document.getElementById('panel-toggle-btn');
   if (!button) return;
   const panelClosed = document.body.classList.contains('panel-collapsed');
-  if (isMobileLayout()) {
-    button.textContent = panelClosed ? '목록 열기' : '지도 보기';
-  } else {
-    button.textContent = panelClosed ? '목록 열기' : '목록 닫기';
-  }
+  button.textContent = panelClosed ? '목록 열기' : '목록 닫기';
+}
+
+function updateFilterToggleLabel() {
+  const button = document.getElementById('filter-toggle-btn');
+  if (!button) return;
+  button.textContent = document.body.classList.contains('mobile-toolbar-collapsed') ? '조회 열기' : '지도 보기';
 }
 
 function setMobileToolbarCollapsed(collapsed) {
   if (!isMobileLayout()) {
     document.body.classList.remove('mobile-toolbar-collapsed');
     updatePanelToggleLabel();
+    updateFilterToggleLabel();
     return;
   }
   document.body.classList.toggle('mobile-toolbar-collapsed', collapsed);
   updatePanelToggleLabel();
+  updateFilterToggleLabel();
   setTimeout(() => naver.maps.Event.trigger(map, 'resize'), 160);
 }
 
@@ -386,6 +395,16 @@ function collapseMobileToolbar() {
 
 function expandMobileToolbar() {
   setMobileToolbarCollapsed(false);
+}
+
+function toggleFilterToolbar() {
+  if (!isMobileLayout()) return;
+  const shouldOpen = document.body.classList.contains('mobile-toolbar-collapsed');
+  if (shouldOpen) {
+    document.body.classList.add('panel-collapsed');
+    updatePanelToggleLabel();
+  }
+  setMobileToolbarCollapsed(!shouldOpen);
 }
 
 function escapeHtml(value) {
@@ -1027,6 +1046,7 @@ document.getElementById('clear-selection-btn').addEventListener('click', clearSe
 document.getElementById('show-all-btn').addEventListener('click', showAllPlaces);
 document.getElementById('close-popup-btn').addEventListener('click', closePopup);
 document.getElementById('panel-toggle-btn').addEventListener('click', () => togglePanel());
+document.getElementById('filter-toggle-btn').addEventListener('click', toggleFilterToolbar);
 document.getElementById('review-download-btn').addEventListener('click', downloadReviewOverrides);
 document.getElementById('review-reset-btn').addEventListener('click', resetReviewDraft);
 document.getElementById('district-select').addEventListener('change', event => handleDistrictChange(event.target.value));
